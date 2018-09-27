@@ -1,0 +1,348 @@
+---
+title: "Trabalho Final - Conceitos Estatisticos para IA"
+output:
+  html_document:
+    df_print: paged
+---
+
+
+
+```{r package_install, message=FALSE, echo=FALSE, results='hide', warning=FALSE}
+
+# Função check.packages: instala vários pacotes do R
+# Verifica se os pacotes estão instalados e instala os que não estiverem
+check.packages <- function(pkg){
+  new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+  if (length(new.pkg)) 
+    install.packages(new.pkg, dependencies = TRUE)
+}
+
+# Seleciona os pacotes desejados
+packages <- c("psych", 
+              "plotly", 
+              "gmodels", 
+              "corrgram",
+              "dplyr",
+              "psych",
+              "factoextra")
+
+# Chama a função com os pacotes desejadas
+check.packages(packages)
+
+
+library("psych")
+library("plotly")
+library("gmodels")
+library("corrgram")
+library("dplyr")
+library("psych")
+
+# mostrar até 2 casas decimais
+options("scipen" = 2)
+```
+
+## Preparação dos Dados
+
+Carregamento dos Dados
+
+```{r}
+# Ler arquivo csv
+Vinhos <- read.csv2("BaseWine_Red_e_White2018.csv", row.names=1)
+
+#mostrar as variáveis e alguns valores
+str(Vinhos)
+
+#mostra as variáveis
+names(Vinhos)
+
+```
+
+Descrição das variáveis:
+
+1. Fixed Acidity: Acidez contida no vinho
+
+2. Volatile Acidity: Quantidade de ácido acético no vinho, valores altos podem levar o vinho a ter sabor desagradável de vinagre
+
+3. Citric Acid: Encontrado em pouca quantidade, o ácido cítrico pode adicionar frescor e sabor ao vinho.
+
+4. Residual Sugar: Quantidade de açucar restante após o término da fermentação. É raro encontrar vinhos com menos de 1 g/l e vinhos com valores maiores que 45 g/l são considerardos doces.
+
+5. Chlorides: Quantidade de sal no vinho
+
+6. Free Sulfur Dioxide: A forma livre de SO2 (dióxido de enxofre) existe em equilibrio entre SO2 molecular (como um gás dissolvido) e ions bissulfito. Evita o crescimento de micróbios e oxidação do vinho.
+
+7. Total Sulfur Dioxide: Total de SO2 livres ou ligados. Em baixa concentração, o SO2 é praticamente imperceptível no vinho, mas em concentrações acima de 50 ppm, o dióxido de enxofre torna-se evidente no aroma e sabor do vinho
+
+8. Density: A densidade do vinho depende do percentual de álcool e açúcar.
+
+9. pH: Descreve se o vinho é básico (14) ou ácido (0). A maioria dos vinhos possuem pH entre 3 e 4
+
+10. Sulphates: Aditivo que pode contribuir com os níveis de SO2, que age contra micróbios e oxidação
+
+11. Alcohol: O percentual de álcool no vinho
+
+12. Quality: Qualidade do vinho com pontuação de 0 a 10, sendo 10 muito bom e 0 de péssima qualidade
+
+13. Vinho: Tipo do vinho: tinto (RED) ou branco (WHITE)
+
+## Estatística Descritiva
+
+#### Sumário dos dados
+
+```{r}
+attach(Vinhos)
+
+summary(Vinhos)
+```
+
+
+Analisando o sumario, nota-se potenciais outliers dados que os valores mínimos e máximos estão muito distantes dos quartis para as seguintes variáveis: fixedacidity, volatileacidity, citricacid, residualsugar, chlorides, freesulfurdioxide, totalsulfurdioxide, sulphates e alcohol
+
+
+Além disso, há valores muito discrepantes:
+
+* CitriCAcid com valor mínimo 0</li>
+
+* TotalSulfurDioxide com valor mínimo 6</li>
+
+* Alcohol com valor mínimo 0,9667</li>
+
+#### Frequencia Absoluta
+
+```{r warning=FALSE}
+table(as.factor(Vinhos$quality), Vinhos$Vinho, useNA = "ifany")
+
+plot_ly (
+  as.data.frame.matrix ( table(as.factor(Vinhos$quality), Vinhos$Vinho) ), 
+  x = c(3:9), y= ~RED, type = 'bar', name='Tinto') %>%
+  add_trace(y= ~WHITE, name='Branco') %>%
+  layout(barmode = 'group')
+```
+
+Analisando a quantidade de vinhos por tipo e por qualidade, há mais vinhos do tipo branco do que tinto no data set. Também nota-se que ambos vinhos seguem uma tendência normal com relação à qualidade.
+
+#### Valores estatisticos relevantes para o vinho tinto
+
+```{r rows.print=14}
+describe(Vinhos %>% filter(Vinho=="RED")) %>% select("Mínima"=min, "Máxima"=max, "Média"=mean, "Desvio Padrão"=sd, "Mediana"=median)
+```
+
+
+#### Valores estatisticos relevantes para o vinho branco
+
+```{r rows.print=14}
+describe(Vinhos %>% filter(Vinho=="WHITE")) %>% select("Mínima"=min, "Máxima"=max, "Média"=mean, "Desvio Padrão"=sd, "Mediana"=median) 
+```
+
+#### Boxplot das variáveis
+
+```{r message=FALSE}
+attach(Vinhos)
+boxplot(fixedacidity ~ Vinho, main='fixedacidity',col=c('red','blue'))
+boxplot(volatileacidity ~ Vinho , main='volatileacidity')
+boxplot(citricacid ~ Vinho, main='citricacid')
+boxplot(residualsugar ~ Vinho, main='residualsugar',col=c('red','blue'))
+boxplot(chlorides ~ Vinho, main='chlorides')
+boxplot(freesulfurdioxide ~ Vinho, main='freesulfurdioxide')
+boxplot(totalsulfurdioxide ~ Vinho, main='totalsulfurdioxide')
+boxplot(density ~ Vinho, main='density')
+boxplot(pH ~ Vinho, main='pH')
+boxplot(sulphates ~ Vinho, main='sulphates')
+boxplot(alcohol ~ Vinho, main='alcohol')
+```
+
+
+<h3>
+<br><br>
+Quando realizamos a quebra pelo tipo de vinho em boxplotes, percebemos as seguintes características :  
+
+fixedacidity - O vinho tinto possui potenciais outliers apenas acima da barreira enquanto o branco possui acima e abaixo das barreiras
+
+citricacid - Há mais potenciais outliers para vinho branco e eles aparecem tanto acima como abaixo das barreiras 
+
+residual sugar - Para vinho tinto há mais ponteciais outliers. Para vinho branco há menos mas são ficam mais distantes da barreira superior
+
+freesulfurdioxide - Há mais potenciais outliers para o vinho branco mais e se localizam mais distantes da barreira superior.
+
+totalsufurdioxide - Há potenciais outliers tanto abaixo como acima das barreira para vinhos brancos, para tinto apenas acima e mais próximos 
+
+density - Para tinto há um número maior de potenciais outliers, tanto abaixo como acima das barreiras, para branco há poucos e alguns bem distantes 
+
+sulphates - Para tinto há mais potenciais outliers e mais distantes da barreira superior
+
+alcohol - Há potenciais outliers acima e abaixo das barreiras apenas para vinhos tintos.  
+<br><br>
+</h3>
+
+
+```{r}
+# Gráfico de dispersão ( pch=caracter, lwd=largura)
+
+#Gráfico de dispersão entre freesulfurdioxide e totalsulfurdioxide 
+plot(freesulfurdioxide~totalsulfurdioxide,pch=1,lwd=3)
+abline(h=mean(freesulfurdioxide), col="red")
+abline(v=mean(totalsulfurdioxide), col="green")
+```
+
+
+<h3>
+<br><br>
+Pelo gráfico, pode-se notar a relação mais próxima de uma linear entre as duas variáveis pelo formato do gráfico.
+Neste, pode-se perceber que, normalmente, quanto maior o indicador totalsulfurdioxide tanto maior o indicador freesulfurdioxide
+<br><br>
+</h3>
+
+```{r}
+attach(Vinhos)
+Vinhos$fx_redSugar <- cut(residualsugar,breaks=c(0,10,20,30,max(residualsugar)))  
+CrossTable( Vinhos$fx_redSugar , Vinhos$Vinho) 
+
+```
+
+<h3>
+<br><br>
+Através da análise acima, pode-se verificar que que a quantidade de açúcar restante nos vinhos tintos é muito menor, sendo que 99,3% destes vinhos 
+tem até 10 g/l e apenas 0,7% possuem quantidade até 20g/l. 
+No caso dos vinhos brancos, percebe-se 75,6% possuem até 10g/l de quantidade de açúcar restante, 24% até 20g/l, 0,3% até 30g/l e 0,1% até 45.8g/l
+
+Por esta tabela, pode-se deduzir que os vinhos brancos são normalmente percebidos como mais doces que os vinhos tintos. 
+<br><br>
+</h3>
+
+
+
+
+```{r}
+#excluir outliers
+
+white <- subset(Vinhos, Vinho=="WHITE", select=c(quality,fixedacidity,volatileacidity,citricacid,residualsugar,
+                                                 chlorides,freesulfurdioxide,totalsulfurdioxide,density,pH,
+                                                 sulphates,alcohol))
+
+
+plot(quality~residualsugar,data=white,main="qualidade x residualsugar para vinhos brancos")
+
+white1<-subset(white, residualsugar<=40)   
+
+
+
+
+```
+
+<h3>
+<br><br>
+Aqui traçou-se um gráfico para a quantidade residual de açúcar x qualidade para os vinhos brancos e estabeleceu-se como critério de outlier de
+vinhos brancos aqueles que possuem concentração residual de açúcar acima de 40g/l. Na variável <b>white1</b> realiza-se a seleção dos vinhos brancos
+sem os outliers. 
+<br><br>
+</h3>
+
+
+```{r}
+#Calcula a matriz de correlações
+matcor <- cor(white1)
+print(matcor, digits = 2)
+
+
+#Exibe-se gráfico ilustrando visualmente o grau de correlação entre as características dos vinhos brancos 
+library(corrgram)
+corrgram(matcor, type = "cor", lower.panel = panel.shade, upper.panel = panel.pie)
+
+
+```
+
+<h3>
+<br><br>
+Para os vinhos brancos sem os outliers, percebe-se a alta correlação positiva entre a densidade e a concentração residual de açúcar e
+a alta correlação negativa entre alcohol e density. 
+<br><br>
+</h3>
+
+
+
+```{r}
+
+panel.cor <- function(x, y, digits=2, prefix ="", cex.cor,
+                      ...)  {
+  usr <- par("usr")
+  on.exit(par(usr))
+  par(usr = c(0, 1, 0, 1))
+  r <- cor(x, y , use = "pairwise.complete.obs")
+  txt <- format(c(r, 0.123456789), digits = digits) [1]
+  txt <- paste(prefix, txt, sep = "")
+  if (missing(cex.cor))
+    cex <- 0.8/strwidth(txt)
+  # abs(r) é para que na saída as correlações ficam proporcionais
+  text(0.5, 0.5, txt, cex = cex * abs(r))
+}
+
+
+pairs(white1, lower.panel=panel.smooth, upper.panel=panel.cor)
+
+
+```
+
+
+<h3>
+<br><br>
+NÃO SEI INTERPRETAR O GRÁFICO E NEM AUMENTAR O ZOOM PARA VISUALIZAÇÃO...... 
+<br><br>
+</h3>
+
+
+```{r}
+
+
+library("factoextra")
+
+#avaliar inicio
+#Normaliza os dados dos vinhos brancos que foram selecionados 
+dados_normalizados = as.data.frame(scale(white1))
+
+
+print("Nome dos atributos sobre os vinhos brancos filtrados ")
+names(dados_normalizados)
+
+print("\n\nEstatísticas sobre os vinhos brancos normalizados ")
+summary(dados_normalizados)
+
+# componentes principais - básico
+# considerando apenas os vinhos brancos que não tenham nenhum elemento NA.
+pca1 <- princomp(white1[complete.cases(white1),], cor=TRUE)
+print("\n\nEstatísticas sobre os componentes principais ")
+summary(pca1)
+
+print("\n\nPercentual que cada componente contribui para explicar a variância ")
+fviz_eig(pca1)
+
+print ("\n\n Contribuicao de cada atributo para o PCA ")
+print("Atributos com correlação positiva aponta para o mesmo lugar no gráfico")
+print("Aqueles com correlação negativa, para o lado oposto no diagrama")
+fviz_pca_var(pca1,
+             col.var = "contrib", # Color by contributions to the PC
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE     # Avoid text overlapping
+             )
+
+
+```
+
+
+```{r}
+#### ANALISES FATORIAL Pacote PSYCH
+library(psych)
+
+pc <- principal(white1,3,rotate="varimax")   #principal components
+
+
+load=loadings(pc)
+print(load,sort=TRUE,digits=3,cutoff=0.01)     
+plot(load)                                 
+identify(load,labels=names(dados_normalizados)) 
+
+#put names of selected points onto the figure  -- to stop, click with command key
+
+plot(pc,labels=names(dados_normalizados))
+
+```
+
