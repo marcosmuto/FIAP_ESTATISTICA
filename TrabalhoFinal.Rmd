@@ -24,7 +24,16 @@ packages <- c("psych",
               "corrgram",
               "dplyr",
               "psych",
-              "factoextra")
+              "factoextra",
+              "lattice",
+              "latticeExtra",
+              "asbio",
+              "car",
+              "rpart",
+              "rpart.plot")
+
+
+
 
 # Chama a função com os pacotes desejadas
 check.packages(packages)
@@ -275,13 +284,34 @@ Dividiu-se a amostra entre Vinhos Tintos e Vinhos Brancos
 A partir dessa divisão, traçaram-se lado a lado os histogramas dessa subdivisão e percebe-se que o histograma é bem 
 diferente para cada atributo e cada tipo de vinho (tinto e branco)
 
-Deste modo, para o modelo preditivo a ser desenvolvido, a partir deste ponto, iremos separar a amostras entre os
-dois tipos de vinho (tinto,branco) e prosseguiremos na criação do modelo preditivo da qualidade apenas para os vinhos brancos 
+A percepção visual será complementada com os testes T das médias dos atributos numéricos para a comprovação das diferenças.
+
 
 <br><br>
 </h3>
 
 
+```{r}
+for (atr in atributos_numericos){
+  result <- t.test(VinhosTintos[,atr],VinhosBrancos[,atr])
+  print(paste0("Teste de igualdade das médias entre tintos e brancos para o atributo ",atr))
+  print(result)
+  
+}
+```
+
+<h3>
+<br><br>
+
+Realizados os testes T para as amostras separadas de vinhos tintos e brancos, observam-se os fatos descritos abaixo:
+<li>Para cada atributo numérico dos vinhos brancos e tintos realizou-se um teste T
+<li>Os testes foram parametrizados com uma margem de confiança de 95%
+<li>O p-value de cada um dos testes apresentou valores substancialmente menores que 5%.
+
+Deste modo, para o modelo preditivo a ser desenvolvido, a partir deste ponto, iremos separar a amostras entre os
+dois tipos de vinho (tinto,branco) e prosseguiremos na criação do modelo preditivo da qualidade apenas para os vinhos brancos 
+<br><br>
+</h3>
 
 
 ### Tratatamento dos outliers
@@ -347,20 +377,31 @@ outVinhoBranco <- unique(c(outAcidezTotal,outAcidezVolatil,outAcidoCitrico,
 
 
 hist(VinhosBrancos[outVinhoBranco,"quality"],main="Qualidade dos vinhos brancos com outliers ")
-print("Sumário da qualidade dos vinhos Brancos com outliers ")
+print("Sumário da qualidade dos vinhos Brancos considerados como outliers ")
 summary(VinhosBrancos[outVinhoBranco,"quality"])
-VinhosBrancos <- VinhosBrancos[-outVinhoBranco,]
-hist(VinhosBrancos[,"quality"],main="Qualidade dos vinhos brancos sem outliers ")
+
+VinhosBrancosSemOut <- VinhosBrancos[-outVinhoBranco,]
+hist(VinhosBrancosSemOut[,"quality"],main="Qualidade dos vinhos brancos sem outliers ")
+
+
 print("Sumário da qualidade dos vinhos Brancos sem outliers")
-summary(VinhosBrancos[,"quality"])
+summary(VinhosBrancosSemOut[,"quality"])
+
+print("Teste T para a média de qualidade entre os vinhos brancos sem outliers e a amostra completa")
+print(t.test(VinhosBrancos$quality,VinhosBrancosSemOut$quality))
+
+VinhosBrancos <- VinhosBrancosSemOut
 
 ```
 
 <h3>
 <br><br>
 
-Os vinhos brancos selecionados como outliers não possuíam uma distribuição especial em relação à qualidade, 
-deste modo, foram retirados da amostra e do modelo a ser utilizado para predição. 
+Os vinhos brancos selecionados como outliers não possuíam uma distribuição especial em relação à qualidade e não afetavam a média da qualidade dos vinhos.
+Deste modo, realizou-se um teste T entre os vinhos brancos sem os outliers e a amostra completa, com 95% de confiança e falhou (p-value = 7,5%). Portanto as amostra possuem médias iguais.
+Por fim, os outliers foram retirados da amostra e do modelo a ser utilizado para predição. 
+
+
 
 <br><br>
 </h3>
@@ -517,6 +558,21 @@ fviz_pca_var(pca1,
 
 ```
 
+<h3>
+<br><br>
+Analisando-se o PCA do modelo completo sobre vinhos brancos, percebe-se: 
+<li>Não há um componente que sozinho contribua com mais do que 29% da variância 
+<li>Para conter mais do que 80% da variância há a necessidade de ao menos 7 componentes, o que implicaria em existir ao menos 7 atributos.
+Pelo gráfico de contribuição dos atributos em relação ao PCA, temos:
+<li>Percebe-se grupos com contribuições no mesmo quadrante e outros no oposto para cada um dos quadrantes
+<li>fixedacidity,citricacid,chlorides,volatileacidity contribuem no mesmo sentido. Havendo melhor alinhamento entre fixedacidity e citricacid.
+<li>residualsugar,density,totalsulfurdioxide,freesulfurdioxide,sulphates estão no mesmo quadrante. Havendo maior proximidade entre residualsugar e density, entre totalsulfurdioxide e freesulfurdioxide.
+<li>ph,quality estão no mesmo quadrante
+<li>alcohol está isolado no último quadrante, no entanto, está quase alinhado com residualsugar e density. 
+
+A partir dessas proximidades entre os atributos, analisa-se os componentes PCA para um subgrupo de atributos percebidos no gráfico. 
+<br><br>
+</h3>
 
 
 ```{r}
@@ -533,14 +589,15 @@ pca3 <- princomp(df2, cor=TRUE)
 print(get_eig(pca3))
 
 
-VinhosBrancosNum$ContribSO2 = VinhosBrancosNum$totalsulfurdioxide *  pca2$loadings[,"Comp.1"][1] + VinhosBrancosNum$freesulfurdioxide *  pca2$loadings[,"Comp.1"][2]
+VinhosBrancosNum$contribso2 = VinhosBrancosNum$totalsulfurdioxide *  pca2$loadings[,"Comp.1"][1] + VinhosBrancosNum$freesulfurdioxide *  pca2$loadings[,"Comp.1"][2]
 
 
-VinhosBrancosNum$AcucarAlcool = VinhosBrancosNum$density * pca3$loadings[,"Comp.1"][1] + VinhosBrancosNum$residualsugar * pca3$loadings[,"Comp.1"][2] + 
+VinhosBrancosNum$acucaralcool = VinhosBrancosNum$density * pca3$loadings[,"Comp.1"][1] + 
+                                VinhosBrancosNum$residualsugar * pca3$loadings[,"Comp.1"][2] + 
                                 VinhosBrancosNum$alcohol * pca3$loadings[,"Comp.1"][3]
 
 
-VinhosBrancosModelo <- as.data.frame(scale(VinhosBrancosNum))
+VinhosBrancosModelo <- VinhosBrancosNum
 VinhosBrancosModelo$residualsugar <- NULL
 VinhosBrancosModelo$freesulfurdioxide <- NULL
 VinhosBrancosModelo$totalsulfurdioxide <- NULL
@@ -549,6 +606,213 @@ VinhosBrancosModelo$alcohol <- NULL
 
 ```
 
+<h3>
+<br><br>
+Utilizando-se a informação sobre as correlações entre as variáveis, extraiu-se os componentes PCA não mais do modelo
+completo, mas sim de alguns atributos
+Deste modo, calculou-se o PCA para os atributos totalsulfurdioxide e freesulfurdioxide e para os atributos density, totalresidualsugar e alcohol. 
+Feito isto, analisou-se o percentual que cada componente contribuia na variância e, ambos os casos, o primeiro componente tinha um percentual superior a 80%.
+Mediante a constatação, criaram-se dois novos atributos no modelo:
+<li>contribso2: para conter a relação linear proposta pelo primeiro componente entre os atributos totalsulfurdioxide e freesulfurdioxide.
+<li>acucaralcool:para conter a relação linear proposta pelo primeiro componente entre os atributos density,alcohol e residualsugar.
+Por fim, os atributos originais foram excluídos do modelo por serem passíveis de substituição sem grandes prejuízos.
+<br><br>
+</h3>
+
+
+```{r}
+
+library(lattice)
+library(latticeExtra)
+library(asbio)
+library(car)
+
+
+attach(VinhosBrancosModelo)
+# Modelo de regressão linear simples
+
+modelo0 <- lm(quality ~ fixedacidity+volatileacidity+citricacid+chlorides+pH+sulphates+contribso2+acucaralcool)
+summary(modelo0)
+#modelo1 <- lm(Valor ~ Área+Semruído+IA)
+#summary(modelo1)
+#modelo2 <- lm(Valor ~ Área+Semruído+IA+Andar+Suítes+DistBM+AV200m+Vista)
+#summary(modelo2)
+
+
+
+measures <- function(x) {
+  L <- list(npar = length(coef(x)),
+            dfres = df.residual(x),
+            nobs = length(fitted(x)),
+            RMSE = summary(x)$sigma,
+            R2 = summary(x)$r.squared,
+            R2adj = summary(x)$adj.r.squared,
+            PRESS = press(x),
+            logLik = logLik(x),
+            AIC = AIC(x),
+            BIC = BIC(x))
+  unlist(L)
+}
+
+modl <- list(m1 = modelo0)
+round(t(sapply(modl, measures)), 3)
+
+
+# Modelo final.
+modelo_fim <- modelo0
+summary(modelo_fim)
+
+
+Val_pred <- predict(modelo_fim,interval = "prediction", level = 0.95) 
+
+# intervalo de confianca - grafico para media
+fit <- Val_pred[,1] # valores preditos
+lower <- Val_pred[,2] # limite inferior
+upper <- Val_pred[,3] # limite superior
+
+
+mse <- mean((quality - fit)^2)
+sqrt(mse)
+
+erro_usando_media <- mean((quality - mean(quality))^2)
+sqrt(erro_usando_media)
+
+
+# grafico residuo
+rs <- resid(modelo_fim)
+plot(predict(modelo_fim), rs, xlab = "Preditor linear",ylab = "Residuos")
+abline(h = 0, lty = 2)
+
+
+
+
+```
+
+CÓDIGO AINDA NÃO FINALIZADO.... PEGO DO EXERCICIO DE BASE DE IMOVIES
+
+forward<-step(modelo1,direction="forward")
+
+forward
+
+summary(forward)
+
+backward<-step(modelo1,direction="backward")
+backward
+summary(backward)
+
+stepwise<-step(modelo1,direction="both")
+ 
+stepwise
+summary(stepwise)
+
+
+# Modelo final.
+modelo_fim <- lm(Valor ~ Área+IA+Andar+Suítes+DistBM+Semruído+Vista)
+summary(modelo_fim)
+
+
+Val_pred <- predict(modelo_fim,interval = "prediction", level = 0.95) 
+fix(Val_pred)
+# intervalo de confianca - grafico para media
+fit <- Val_pred[,1] # valores preditos
+lower <- Val_pred[,2] # limite inferior
+upper <- Val_pred[,3] # limite superior
+
+
+mse <- mean((imoveis$Valor - fit)^2)
+sqrt(mse)
+
+erro_usando_media <- mean((imoveis$Valor - mean(imoveis$Valor))^2)
+sqrt(erro_usando_media)
+
+
+# grafico residuo
+rs <- resid(modelo_fim)
+plot(predict(modelo_fim), rs, xlab = "Preditor linear",ylab = "Residuos")
+abline(h = 0, lty = 2)
+
+attach(imoveis)
+Imoveis_Final<-cbind(imoveis,Val_pred)
+
+fix(Imoveis_Final)
+
+
+write.table(file='Arquivo_Valorizacao_Ambiental_saida.csv',Imoveis_Final, sep=';',dec=',')
+
+
+## Árvore de Regressão
+
+
+install.packages("rpart")
+install.packages("rpart.plot")
+library(rpart)
+library(rpart.plot)
+
+modelo_Valor_tree <- rpart (Valor ~ Área+IA+Andar+Suítes+DistBM+Semruído+AV200m+Vista, data=imoveis, 
+                     cp = 0.001,minsplit = 5,maxdepth=10)
+
+
+
+
+# Faz o Gráfico
+rpart.plot(modelo_Valor_tree, type=4, extra=1, under=FALSE, clip.right.labs=TRUE,
+           fallen.leaves=FALSE,   digits=2, varlen=-10, faclen=20,
+           cex=0.4, tweak=1.7,
+           compress=TRUE,
+           snip=FALSE)
+
+Val_pred_tree <- predict(modelo_Valor_tree,interval = "prediction", level = 0.95) 
+str(Val_pred_tree)
+
+
+mse_tree <- mean((imoveis$Valor - Val_pred_tree)^2)
+sqrt(mse_tree)
+
+erro_usando_media <- mean((imoveis$Valor - mean(imoveis$Valor))^2)
+sqrt(erro_usando_media)
+
+# grafico residuo
+rs <- Val_pred_tree- imoveis$Valor
+plot(predict(modelo_Valor_tree), rs, xlab = "Com Árvore de Regressão",ylab = "Residuos")
+abline(h = 0, lty = 2)
+
+
+```{r}
+
+
+library(rpart)
+library(rpart.plot)
+
+modelo_Valor_tree <- rpart (quality ~ fixedacidity+volatileacidity+citricacid+chlorides+pH+
+                                      sulphates+contribso2+acucaralcool, data=VinhosBrancosModelo, 
+                            cp = 0.001,minsplit = 5,maxdepth=10)
+
+
+
+
+# Faz o Gráfico
+rpart.plot(modelo_Valor_tree, type=4, extra=1, under=FALSE, clip.right.labs=TRUE,
+           fallen.leaves=FALSE,   digits=2, varlen=-10, faclen=20,
+           cex=0.4, tweak=1.7,
+           compress=TRUE,
+           snip=FALSE)
+
+Val_pred_tree <- predict(modelo_Valor_tree,interval = "prediction", level = 0.95) 
+str(Val_pred_tree)
+
+
+mse_tree <- mean((VinhosBrancosModelo$quality - Val_pred_tree)^2)
+sqrt(mse_tree)
+
+erro_usando_media <- mean((VinhosBrancosModelo$quality - mean(VinhosBrancosModelo$quality))^2)
+sqrt(erro_usando_media)
+
+# grafico residuo
+rs <- Val_pred_tree- VinhosBrancosModelo$quality
+plot(predict(modelo_Valor_tree), rs, xlab = "Com Árvore de Regressão",ylab = "Residuos")
+abline(h = 0, lty = 2)
+
+```
 
 
 ```{r fig.width=16, fig.height=12,echo=FALSE}
