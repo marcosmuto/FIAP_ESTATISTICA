@@ -575,6 +575,33 @@ A partir dessas proximidades entre os atributos, analisa-se os componentes PCA p
 </h3>
 
 
+
+
+
+
+
+```{r fig.width=16, fig.height=12,echo=FALSE}
+#### ANALISES FATORIAL Pacote PSYCH
+library(psych)
+
+pc <- principal(VinhosBrancosNum,3,rotate="varimax")   #principal components
+
+
+load=loadings(pc)
+print(load,sort=TRUE,digits=3,cutoff=0.01)     
+plot(load)                                 
+identify(load,labels=names(VinhosBrancosNum)) 
+
+#put names of selected points onto the figure  -- to stop, click with command key
+
+plot(pc,labels=names(dados_normalizados))
+
+```
+
+
+
+
+
 ```{r}
 # componentes principais - básico
 library(dplyr)
@@ -597,12 +624,6 @@ VinhosBrancosNum$acucaralcool = VinhosBrancosNum$density * pca3$loadings[,"Comp.
                                 VinhosBrancosNum$alcohol * pca3$loadings[,"Comp.1"][3]
 
 
-VinhosBrancosModelo <- VinhosBrancosNum
-VinhosBrancosModelo$residualsugar <- NULL
-VinhosBrancosModelo$freesulfurdioxide <- NULL
-VinhosBrancosModelo$totalsulfurdioxide <- NULL
-VinhosBrancosModelo$density <- NULL
-VinhosBrancosModelo$alcohol <- NULL 
 
 ```
 
@@ -628,15 +649,72 @@ library(asbio)
 library(car)
 
 
-attach(VinhosBrancosModelo)
+
+
+
+testa.modelo <- function(modelo=NULL,valores_observados,valores_preditos=NULL,tit_grafico=NULL,sumario=TRUE){
+    # Testa o modelo
+    #Exibe um sumário do modelo 
+    if (is.null(modelo)){
+       fit = valores_preditos
+    }
+    else {
+        #Caso haja modelo.... 
+        print("Sumário do modelo....")
+        if(sumario){
+          summary(modelo)
+        } 
+        else {
+         str(modelo)
+        }
+    
+        #Faz as predições do modelo 
+        Val_pred <- predict(modelo,interval = "prediction", level = 0.95)
+        dimensoes = length(dim(Val_pred)) 
+        
+        if (dimensoes > 1) { 
+          # intervalo de confianca - grafico para media
+          fit <- Val_pred[,1] # valores preditos
+          lower <- Val_pred[,2] # limite inferior
+          upper <- Val_pred[,3] # limite superior
+        }
+        else {
+          fit <- Val_pred
+        }
+    }
+  
+    #Calcula a média do quadrado das diferenças entre os valores preditos e os observados 
+    mse <- mean((valores_observados - fit)^2)
+    print(paste0("MSE para o modelo---> ",sqrt(mse)))
+
+    erro_usando_media <- mean((quality - mean(quality))^2)
+    print(paste0("Erro médio em relação a média para o modelo---> ",sqrt(erro_usando_media)))
+    
+
+
+    # grafico residuo
+    if (!is.null(modelo)){ 
+        rs <- resid(modelo)
+        plot(predict(modelo), rs, xlab = "Preditor linear",ylab = "Residuos",main=tit_grafico)
+        abline(h = 0, lty = 2)
+    }
+    
+    return (NULL)    
+    
+}
+
+attach(VinhosBrancosNum)
+
 # Modelo de regressão linear simples
 
-modelo0 <- lm(quality ~ fixedacidity+volatileacidity+citricacid+chlorides+pH+sulphates+contribso2+acucaralcool)
-summary(modelo0)
-#modelo1 <- lm(Valor ~ Área+Semruído+IA)
-#summary(modelo1)
-#modelo2 <- lm(Valor ~ Área+Semruído+IA+Andar+Suítes+DistBM+AV200m+Vista)
-#summary(modelo2)
+modelo0 <- lm(quality ~ fixedacidity+volatileacidity+citricacid+chlorides+pH+sulphates+contribso2+acucaralcool,
+              data=VinhosBrancosNum)
+
+
+
+modelo1 <- lm(quality ~ fixedacidity+volatileacidity+citricacid+chlorides+pH+sulphates+
+                        totalsulfurdioxide+freesulfurdioxide+density+residualsugar+alcohol,
+              data=VinhosBrancosNum)
 
 
 
@@ -654,103 +732,110 @@ measures <- function(x) {
   unlist(L)
 }
 
-modl <- list(m1 = modelo0)
+modl <- list(m1 = modelo0,m2=modelo1)
 round(t(sapply(modl, measures)), 3)
 
 
-# Modelo final.
-modelo_fim <- modelo0
-summary(modelo_fim)
+# Modelo de regressão linear com o modelo aplicado o PCA
+print("Modelo com regressão linear aplicada sobre o modelo com atributos gerados pelo PCA")
+result <- testa.modelo(modelo=modelo0,valores_observados=quality,tit_grafico = "Linear com PCA")
 
 
-Val_pred <- predict(modelo_fim,interval = "prediction", level = 0.95) 
 
-# intervalo de confianca - grafico para media
-fit <- Val_pred[,1] # valores preditos
-lower <- Val_pred[,2] # limite inferior
-upper <- Val_pred[,3] # limite superior
+# Modelo com os dados completos sem transformação via PCA
+print("Modelo de regressão linear aplicada sobre o modelo com todos os atributos")
+result <- testa.modelo(modelo=modelo1,valores_observados=quality,tit_grafico = "Linear Completo")
 
 
-mse <- mean((quality - fit)^2)
-sqrt(mse)
+##### UTILIZANDO FORWARD,BACKWARD OU BOTH 
 
-erro_usando_media <- mean((quality - mean(quality))^2)
-sqrt(erro_usando_media)
+VinhosBrancosStep <- VinhosBrancosNum
+VinhosBrancosStep$contribso2 <- NULL 
+VinhosBrancosStep$acucaralcool <- NULL 
+
+modelo.base <- lm(quality ~ fixedacidity,
+              data=VinhosBrancosStep)
 
 
-# grafico residuo
-rs <- resid(modelo_fim)
-plot(predict(modelo_fim), rs, xlab = "Preditor linear",ylab = "Residuos")
-abline(h = 0, lty = 2)
+
+modelo.completo <- lm(quality ~ fixedacidity+volatileacidity+citricacid+chlorides+pH+sulphates+
+                        totalsulfurdioxide+freesulfurdioxide+density+residualsugar+alcohol,
+              data=VinhosBrancosStep)
+
+
+modelo.medio <- lm(quality ~ fixedacidity+volatileacidity+citricacid+chlorides+pH+sulphates,
+              data=VinhosBrancosStep)
+ 
+
+forward<-step(modelo.base,direction="forward")
+
+
+backward<-step(modelo.completo,direction="backward")
+
+stepwise<-step(modelo.medio,direction="both")
+ 
+
+print("*** Análise dos indicadores para modelos de regressão linear obtidos pelos métodos forward,backward e both ****")
+
+modl <- list(m1 = forward,m2=backward,m3=stepwise)
+round(t(sapply(modl, measures)), 3)
+
+
+##### TESTE DE PREDIÇÃO DOS MODELOS #######
+print("Modelo de regressão linear utilizando a estratégia forward nos vinhos brancos com todos os atributos")
+result<-testa.modelo(modelo=forward,valores_observados=quality,tit_grafico="Linear com forward")
+
+
+print("Modelo de regressão linear utilizando a estratégia backward nos vinhos brancos com todos os atributos")
+result<-testa.modelo(modelo=backward,valores_observados=quality,tit_grafico = "Linear com backward")
+
+
+print("Modelo de regressão linear utilizando a estratégia both nos vinhos brancos com todos os atributos")
+result<-testa.modelo(modelo=stepwise,valores_observados=quality,tit_grafico = "Linear com both")
+
+
+```
+
+```{r}
+
+##### Testa contra os piores modelos 
+
+VinhosBrancosModelosRuins <- VinhosBrancosNum
+
+#Utiliza como 
+VinhosBrancosModelosRuins$qualidade.media <- mean(VinhosBrancosModelosRuins$quality)
+
+valores_preditos <- VinhosBrancosModelosRuins$qualidade.media
+print("Modelo Ruim -  retorna sempre a média ")
+result<-testa.modelo(modelo=NULL,valores_observados=VinhosBrancosModelosRuins$quality,
+             valores_preditos=valores_preditos,tit_grafico = "Modelo Ruim - Sempre a média")
+
+
+VinhosBrancosModelosRuins$qualidade.max <- max(VinhosBrancosModelosRuins$quality)
+valores_preditos <- VinhosBrancosModelosRuins$qualidade.max
+
+print("Modelo Ruim -  retorna sempre o máximo ")
+result<-testa.modelo(modelo=NULL,valores_observados=VinhosBrancosModelosRuins$quality,
+             valores_preditos=valores_preditos,tit_grafico = "Modelo Ruim - sempre o máximo")
 
 
 
 
 ```
 
-CÓDIGO AINDA NÃO FINALIZADO.... PEGO DO EXERCICIO DE BASE DE IMOVIES
-
-forward<-step(modelo1,direction="forward")
-
-forward
-
-summary(forward)
-
-backward<-step(modelo1,direction="backward")
-backward
-summary(backward)
-
-stepwise<-step(modelo1,direction="both")
- 
-stepwise
-summary(stepwise)
 
 
-# Modelo final.
-modelo_fim <- lm(Valor ~ Área+IA+Andar+Suítes+DistBM+Semruído+Vista)
-summary(modelo_fim)
+```{r fig.width=22, fig.height=18,echo=FALSE}
 
-
-Val_pred <- predict(modelo_fim,interval = "prediction", level = 0.95) 
-fix(Val_pred)
-# intervalo de confianca - grafico para media
-fit <- Val_pred[,1] # valores preditos
-lower <- Val_pred[,2] # limite inferior
-upper <- Val_pred[,3] # limite superior
-
-
-mse <- mean((imoveis$Valor - fit)^2)
-sqrt(mse)
-
-erro_usando_media <- mean((imoveis$Valor - mean(imoveis$Valor))^2)
-sqrt(erro_usando_media)
-
-
-# grafico residuo
-rs <- resid(modelo_fim)
-plot(predict(modelo_fim), rs, xlab = "Preditor linear",ylab = "Residuos")
-abline(h = 0, lty = 2)
-
-attach(imoveis)
-Imoveis_Final<-cbind(imoveis,Val_pred)
-
-fix(Imoveis_Final)
-
-
-write.table(file='Arquivo_Valorizacao_Ambiental_saida.csv',Imoveis_Final, sep=';',dec=',')
-
-
-## Árvore de Regressão
-
-
-install.packages("rpart")
-install.packages("rpart.plot")
-library(rpart)
 library(rpart.plot)
+library(rpart)
 
-modelo_Valor_tree <- rpart (Valor ~ Área+IA+Andar+Suítes+DistBM+Semruído+AV200m+Vista, data=imoveis, 
-                     cp = 0.001,minsplit = 5,maxdepth=10)
 
+attach(VinhosBrancosNum)
+
+modelo_Valor_tree <- rpart (quality ~ fixedacidity+volatileacidity+citricacid+chlorides+pH+
+                                      sulphates+contribso2+acucaralcool, data=VinhosBrancosNum, 
+                            cp = 0.001,minsplit = 5,maxdepth=10)
 
 
 
@@ -761,30 +846,30 @@ rpart.plot(modelo_Valor_tree, type=4, extra=1, under=FALSE, clip.right.labs=TRUE
            compress=TRUE,
            snip=FALSE)
 
-Val_pred_tree <- predict(modelo_Valor_tree,interval = "prediction", level = 0.95) 
-str(Val_pred_tree)
 
-
-mse_tree <- mean((imoveis$Valor - Val_pred_tree)^2)
-sqrt(mse_tree)
-
-erro_usando_media <- mean((imoveis$Valor - mean(imoveis$Valor))^2)
-sqrt(erro_usando_media)
-
-# grafico residuo
-rs <- Val_pred_tree- imoveis$Valor
-plot(predict(modelo_Valor_tree), rs, xlab = "Com Árvore de Regressão",ylab = "Residuos")
-abline(h = 0, lty = 2)
+```
 
 
 ```{r}
-
-
 library(rpart)
-library(rpart.plot)
 
-modelo_Valor_tree <- rpart (quality ~ fixedacidity+volatileacidity+citricacid+chlorides+pH+
-                                      sulphates+contribso2+acucaralcool, data=VinhosBrancosModelo, 
+attach(VinhosBrancosNum)
+
+print("Modelo de Árvore de regressão com aplicação de PCA - atributos retirados")
+result<-testa.modelo(modelo=modelo_Valor_tree ,valores_observados = quality,tit_grafico = "Árvore de Regressão com PCA",
+             sumario=FALSE)
+
+ 
+
+```
+
+
+```{r fig.width=22, fig.height=18,echo=FALSE}
+
+
+modelo_Valor_tree <- rpart (quality ~ fixedacidity+volatileacidity+citricacid+chlorides+pH+sulphates+
+                            totalsulfurdioxide+freesulfurdioxide+
+                            density+residualsugar+alcohol, data=VinhosBrancosNum, 
                             cp = 0.001,minsplit = 5,maxdepth=10)
 
 
@@ -797,39 +882,23 @@ rpart.plot(modelo_Valor_tree, type=4, extra=1, under=FALSE, clip.right.labs=TRUE
            compress=TRUE,
            snip=FALSE)
 
-Val_pred_tree <- predict(modelo_Valor_tree,interval = "prediction", level = 0.95) 
-str(Val_pred_tree)
-
-
-mse_tree <- mean((VinhosBrancosModelo$quality - Val_pred_tree)^2)
-sqrt(mse_tree)
-
-erro_usando_media <- mean((VinhosBrancosModelo$quality - mean(VinhosBrancosModelo$quality))^2)
-sqrt(erro_usando_media)
-
-# grafico residuo
-rs <- Val_pred_tree- VinhosBrancosModelo$quality
-plot(predict(modelo_Valor_tree), rs, xlab = "Com Árvore de Regressão",ylab = "Residuos")
-abline(h = 0, lty = 2)
 
 ```
 
 
-```{r fig.width=16, fig.height=12,echo=FALSE}
-#### ANALISES FATORIAL Pacote PSYCH
-library(psych)
+```{r}
+library(rpart)
 
-pc <- principal(VinhosBrancosNum,3,rotate="varimax")   #principal components
+attach(VinhosBrancosNum)
 
-
-load=loadings(pc)
-print(load,sort=TRUE,digits=3,cutoff=0.01)     
-plot(load)                                 
-identify(load,labels=names(VinhosBrancosModelo)) 
-
-#put names of selected points onto the figure  -- to stop, click with command key
-
-plot(pc,labels=names(dados_normalizados))
+print("Modelo de Árvore de regressão com todos os atributos - sem aplicação de PCA")
+result<-testa.modelo(modelo=modelo_Valor_tree ,valores_observados = quality,
+                     tit_grafico = "Árvore de Regressão completo",
+                     sumario=FALSE)
 
 ```
+
+
+
+
 
