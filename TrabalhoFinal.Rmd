@@ -98,14 +98,13 @@ Descrição das variáveis:
 
 #### Sumário dos dados
 
-```{r}
+```{r, message=FALSE}
 attach(Vinhos)
 
 summary(Vinhos)
 ```
 
-
-Analisando o sumario, nota-se potenciais outliers dados que os valores mínimos e máximos estão muito distantes dos quartis para as seguintes variáveis: fixedacidity, volatileacidity, citricacid, residualsugar, chlorides, freesulfurdioxide, totalsulfurdioxide, sulphates e alcohol
+Analisando o sumário, nota-se potenciais outliers dados que os valores mínimos e máximos estão muito distantes dos quartis para as seguintes variáveis: fixedacidity, volatileacidity, citricacid, residualsugar, chlorides, freesulfurdioxide, totalsulfurdioxide, sulphates e alcohol
 
 
 Além disso, há valores muito discrepantes:
@@ -118,7 +117,7 @@ Além disso, há valores muito discrepantes:
 
 #### Frequencia Absoluta
 
-```{r warning=FALSE}
+```{r warning=FALSE, message=FALSE}
 table(as.factor(Vinhos$quality), Vinhos$Vinho, useNA = "ifany")
 
 plot_ly (
@@ -147,13 +146,11 @@ estatBranco
 
 #### Obtem as razões entre as estatísticas 
 
-```{r}
+```{r rows.print=14}
     estatRazao <- estatTinto / estatBranco
     estatRazao
 ```
 
-
-<h3>
 <br><br>
 
 Comparando-se os atributos dos vinhos tintos com os vinhos brancos de forma tabular através da observação dos parâmetros de máximo, mínimo, média, desvio padrão e mediana da amostra. Temos: 
@@ -165,7 +162,6 @@ Comparando-se os atributos dos vinhos tintos com os vinhos brancos de forma tabu
 
 Antes de qualquer conclusão, deve-se tratar as questões do outliers e valores faltantes que podem estar influenciando esta amostra. 
 <br><br>
-</h3>
 
 
 #### Retirada de valores nulos ou zerados 
@@ -191,8 +187,6 @@ nVinhosComValoresFaltantes <- length(Vinhos[is.na(Vinhos)]) + length(Vinhos[is.n
 paste0("Vinhos com valores faltantes = ",nVinhosComValoresFaltantes)
 ```
 
-
-<h3>
 <br><br>
 
 Pelos resultados observados de forma tabular, temos que apenas o atributo <b>citricacid</b> possui valores zerados.
@@ -203,10 +197,6 @@ de ácido cítrico. Fazemos a sua substituição pelo valor mínimo (0.1)
 Quanto a existência de valores inválidos ou não inexistentes, isto não foi detectado na amostra. 
 
 <br><br>
-</h3>
-
-
-
 
 
 #### Boxplot das variáveis para visualização de outliers
@@ -227,17 +217,16 @@ boxplot(alcohol ~ Vinho, main='alcohol')
 ```
 
 
-<h3>
 <br><br>
-Quando realizamos a quebra pelo tipo de vinho em boxplotes, percebemos as seguintes características :  
+Quando realizamos a quebra pelo tipo de vinho em boxplotes, percebemos as seguintes características:  
 
 fixedacidity - O vinho tinto possui potenciais outliers apenas acima da barreira enquanto o branco possui acima e abaixo das barreiras
 
 citricacid - Há mais potenciais outliers para vinho branco e eles aparecem tanto acima como abaixo das barreiras 
 
-residual sugar - Para vinho tinto há mais ponteciais outliers. Para vinho branco há menos mas  ficam mais distantes da barreira superior
+residual sugar - Para vinho tinto há mais potenciais outliers. Para vinho branco há menos, mas ficam mais distantes da barreira superior
 
-freesulfurdioxide - Há mais potenciais outliers para o vinho branco  e se localizam mais distantes da barreira superior.
+freesulfurdioxide - Há mais potenciais outliers para o vinho branco e se localizam mais distantes da barreira superior.
 
 totalsufurdioxide - Há potenciais outliers tanto abaixo como acima das barreira para vinhos brancos, para tinto apenas acima e mais próximos 
 
@@ -247,10 +236,8 @@ sulphates - Para tinto há mais potenciais outliers e mais distantes da barreira
 
 alcohol - Há potenciais outliers acima e abaixo das barreiras apenas para vinhos tintos.  
 
-
-
 <br><br>
-</h3>
+
 
 ```{r fig.width=8, fig.height=5,echo=FALSE}
 
@@ -276,7 +263,6 @@ for (atr in atributos_numericos){
 ```
 
 
-<h3>
 <br><br>
 
 Dividiu-se a amostra entre Vinhos Tintos e Vinhos Brancos 
@@ -286,9 +272,7 @@ diferente para cada atributo e cada tipo de vinho (tinto e branco)
 
 A percepção visual será complementada com os testes T das médias dos atributos numéricos para a comprovação das diferenças.
 
-
 <br><br>
-</h3>
 
 
 ```{r}
@@ -300,7 +284,6 @@ for (atr in atributos_numericos){
 }
 ```
 
-<h3>
 <br><br>
 
 Realizados os testes T para as amostras separadas de vinhos tintos e brancos, observam-se os fatos descritos abaixo:
@@ -311,7 +294,6 @@ Realizados os testes T para as amostras separadas de vinhos tintos e brancos, ob
 Deste modo, para o modelo preditivo a ser desenvolvido, a partir deste ponto, iremos separar a amostras entre os
 dois tipos de vinho (tinto,branco) e prosseguiremos na criação do modelo preditivo da qualidade apenas para os vinhos brancos 
 <br><br>
-</h3>
 
 
 ### Tratatamento dos outliers
@@ -339,7 +321,6 @@ for (atributo in atributos_numericos){
 ```
 
 
-<h3>
 <br><br>
 
 Há valores potenciais de outliers em quase todos os atributos dos vinhos brancos, exceto na concentração de alchool 
@@ -357,7 +338,6 @@ a seguir: http://www.ivv.gov.pt/np4/89/
 <li>Total Dióxiodo de Enxofre <= 250 mg/L
 
 <br><br>
-</h3>
 
 
 #Extração dos outliers 
@@ -394,7 +374,7 @@ VinhosBrancos <- VinhosBrancosSemOut
 
 ```
 
-<h3>
+
 <br><br>
 
 Os vinhos brancos selecionados como outliers não possuíam uma distribuição especial em relação à qualidade e não afetavam a média da qualidade dos vinhos.
@@ -402,15 +382,13 @@ Deste modo, realizou-se um teste T entre os vinhos brancos sem os outliers e a a
 Por fim, os outliers foram retirados da amostra e do modelo a ser utilizado para predição. 
 
 
-
 <br><br>
-</h3>
 
 
 
 
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 # Gráfico de dispersão ( pch=caracter, lwd=largura)
 attach(VinhosBrancos)
 #Gráfico de dispersão entre freesulfurdioxide e totalsulfurdioxide 
@@ -420,22 +398,22 @@ abline(v=mean(totalsulfurdioxide), col="green")
 ```
 
 
-<h3>
 <br><br>
 Pelo gráfico, pode-se notar uma tendência linear entre as duas variáveis pelo formato do gráfico.
 Neste, pode-se perceber que, normalmente, quanto maior o indicador totalsulfurdioxide tanto maior o indicador freesulfurdioxide.
 No entanto, o espalhamento ao redor de uma possível reta mostra que pode não ser a aproximação mais adequada 
 <br><br>
-</h3>
 
-```{r}
+
+
+```{r message=FALSE, warning=FALSE}
 attach(Vinhos)
 Vinhos$fx_redSugar <- cut(residualsugar,breaks=c(0,10,20,30,max(residualsugar)))  
 CrossTable( Vinhos$fx_redSugar , Vinhos$Vinho) 
 
 ```
 
-<h3>
+
 <br><br>
 Através da análise acima, pode-se verificar que que a quantidade de açúcar restante nos vinhos tintos é muito menor, sendo que 99,3% destes vinhos 
 tem até 10 g/l e apenas 0,7% possuem quantidade até 20g/l. 
@@ -443,8 +421,6 @@ No caso dos vinhos brancos, percebe-se 75,6% possuem até 10g/l de quantidade de
 
 Por esta tabela, pode-se deduzir que os vinhos brancos são normalmente percebidos como mais doces que os vinhos tintos. 
 <br><br>
-</h3>
-
 
 
 
@@ -459,12 +435,12 @@ plot(quality~residualsugar,data=VinhosBrancos,main="qualidade x residualsugar pa
 
 ```
 
-<h3>
+
 <br><br>
 Aqui traçou-se um gráfico para a quantidade residual de açúcar x qualidade para os vinhos brancos já sem os outliers. 
 Percebe-se que os vinhos brancos de maior qualidade possuem uma concentração de açúcar menor que 20 g/L
 <br><br>
-</h3>
+
 
 
 ```{r fig.width=13, fig.height=5,echo=FALSE}
@@ -509,14 +485,13 @@ pairs(VinhosBrancosNum, lower.panel=panel.smooth, upper.panel=panel.cor)
 
 
 
-<h3>
 <br><br>
 Pelos gráficos acima, percebe-se: 
 <li>Alta correlação positiva entre a densidade e a concentração residual de açúcar
 <li>Alta correlação positiva entre Total de SO2 e a taxa de SO2 livre 
 <li>Alta correlação negativa entre o volume de alcool e a densidade 
 <br><br>
-</h3>
+
 
 
 
@@ -558,7 +533,7 @@ fviz_pca_var(pca1,
 
 ```
 
-<h3>
+
 <br><br>
 Analisando-se o PCA do modelo completo sobre vinhos brancos, percebe-se: 
 <li>Não há um componente que sozinho contribua com mais do que 29% da variância 
@@ -572,15 +547,10 @@ Pelo gráfico de contribuição dos atributos em relação ao PCA, temos:
 
 A partir dessas proximidades entre os atributos, analisa-se os componentes PCA para um subgrupo de atributos percebidos no gráfico. 
 <br><br>
-</h3>
 
 
 
-
-
-
-
-```{r fig.width=16, fig.height=12,echo=FALSE}
+```{r fig.width=16, fig.height=12,echo=FALSE, warning=FALSE, message=FALSE}
 #### ANALISES FATORIAL Pacote PSYCH
 library(psych)
 
@@ -602,7 +572,7 @@ plot(pc,labels=names(dados_normalizados))
 
 
 
-```{r}
+```{r , warning=FALSE, message=FALSE}
 # componentes principais - básico
 library(dplyr)
 
@@ -627,7 +597,7 @@ VinhosBrancosNum$acucaralcool = VinhosBrancosNum$density * pca3$loadings[,"Comp.
 
 ```
 
-<h3>
+
 <br><br>
 Utilizando-se a informação sobre as correlações entre as variáveis, extraiu-se os componentes PCA não mais do modelo
 completo, mas sim de alguns atributos
@@ -638,10 +608,10 @@ Mediante a constatação, criaram-se dois novos atributos no modelo:
 <li>acucaralcool:para conter a relação linear proposta pelo primeiro componente entre os atributos density,alcohol e residualsugar.
 Por fim, os atributos originais foram excluídos do modelo por serem passíveis de substituição sem grandes prejuízos.
 <br><br>
-</h3>
 
 
-```{r}
+
+```{r, warning=FALSE, message=FALSE }
 
 library(lattice)
 library(latticeExtra)
