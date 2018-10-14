@@ -288,7 +288,7 @@ for (atr in atributos_numericos){
 
 Realizados os testes T para as amostras separadas de vinhos tintos e brancos, observam-se os fatos descritos abaixo:
 <li>Para cada atributo numérico dos vinhos brancos e tintos realizou-se um teste T
-<li>Os testes foram parametrizados com uma margem de confiança de 95%
+<li>Os testes foram parametrizados com um nível de confiança de 95%
 <li>O p-value de cada um dos testes apresentou valores substancialmente menores que 5%.
 
 Deste modo, para o modelo preditivo a ser desenvolvido, a partir deste ponto, iremos separar a amostras entre os
@@ -302,8 +302,8 @@ dois tipos de vinho (tinto,branco) e prosseguiremos na criação do modelo predi
 
 
 #Selecionar e imprimir potenciais outliers, supondo uma distribuição normal.
-#Nesse caso, uma informação é classificada como outlier quando é superior a 1.5 vezes o intervalo interquartil além
-#do 3o. quartil ou inferior a 1.5 vezes o intervalor interquartil abaixo do 1 quartil 
+#Nesse caso, uma informação é classificada como outlier quando é superior a 1.5 vezes o intervalo interquartilíco além
+#do 3o. quartil ou inferior a 1.5 vezes o intervalor interquartilíco abaixo do 1 quartil 
 for (atributo in atributos_numericos){
   outliers <- boxplot.stats(VinhosBrancos[,atributo])$out
   if (length(outliers) > 0 ){
@@ -356,7 +356,7 @@ outVinhoBranco <- unique(c(outAcidezTotal,outAcidezVolatil,outAcidoCitrico,
                            outAcucar1,outAcucar2,outCloreto,outTotalSO2))
 
 
-hist(VinhosBrancos[outVinhoBranco,"quality"],main="Qualidade dos vinhos brancos com outliers ")
+hist(VinhosBrancos[outVinhoBranco,"quality"],main="Qualidade dos vinhos brancos considerados como outliers ")
 print("Sumário da qualidade dos vinhos Brancos considerados como outliers ")
 summary(VinhosBrancos[outVinhoBranco,"quality"])
 
@@ -501,8 +501,8 @@ Pelos gráficos acima, percebe-se:
 library("factoextra")
 
 #avaliar inicio
-#Normaliza os dados dos vinhos brancos que foram selecionados 
-dados_normalizados = as.data.frame(scale(VinhosBrancosNum))
+#Padroniza os dados dos vinhos brancos que foram selecionados 
+dados_padronizados = as.data.frame(scale(VinhosBrancosNum))
 
 
 # componentes principais - básico
@@ -564,7 +564,7 @@ identify(load,labels=names(VinhosBrancosNum))
 
 #put names of selected points onto the figure  -- to stop, click with command key
 
-plot(pc,labels=names(dados_normalizados))
+plot(pc,labels=names(dados_padronizados))
 
 ```
 
