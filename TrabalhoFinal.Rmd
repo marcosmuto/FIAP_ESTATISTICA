@@ -622,7 +622,7 @@ library(car)
 
 
 
-testa.modelo <- function(modelo=NULL,valores_observados,valores_preditos=NULL,tit_grafico=NULL,sumario=TRUE){
+testa.modelo <- function(modelo=NULL,valores_observados,valores_preditos=NULL, dataset, tit_grafico=NULL,sumario=TRUE){
     # Testa o modelo
     #Exibe um sumário do modelo 
     if (is.null(modelo)){
@@ -639,7 +639,7 @@ testa.modelo <- function(modelo=NULL,valores_observados,valores_preditos=NULL,ti
         }
     
         #Faz as predições do modelo 
-        Val_pred <- predict(modelo,interval = "prediction", level = 0.95)
+        Val_pred <- predict(modelo, newdata = dataset, interval = "prediction", level = 0.95)
         dimensoes = length(dim(Val_pred)) 
         
         if (dimensoes > 1) { 
@@ -673,18 +673,50 @@ testa.modelo <- function(modelo=NULL,valores_observados,valores_preditos=NULL,ti
     
 }
 
-attach(VinhosBrancosNum)
+
+```
+
+
+```{r}
+
+# Split em conjuntos de treinamento e teste
+set.seed(333)
+treinamento <- sample_frac(VinhosBrancosNum, 0.7)
+teste <- setdiff(VinhosBrancosNum, treinamento)
+
+
+# Dados sem a aplicação do PCA
+treinamento %>%
+  select(fixedacidity, volatileacidity, citricacid, chlorides, pH, sulphates, totalsulfurdioxide,
+         freesulfurdioxide, density, residualsugar, alcohol, quality) -> treinamento_semPCA
+
+teste %>% 
+  select(fixedacidity, volatileacidity, citricacid, chlorides, pH, sulphates, totalsulfurdioxide,
+         freesulfurdioxide, density, residualsugar, alcohol, quality) -> teste_semPCA
+
+
+# Dados com a aplicação do PCA
+treinamento %>%
+  select(fixedacidity, volatileacidity, citricacid, chlorides, pH, sulphates, contribso2, acucaralcool, quality) -> treinamento_comPCA
+
+teste %>% 
+  select(fixedacidity, volatileacidity, citricacid, chlorides, pH, sulphates, contribso2, acucaralcool, quality) -> teste_comPCA
+
+
+```
+
+
+```{r}
 
 # Modelo de regressão linear simples
 
-modelo0 <- lm(quality ~ fixedacidity+volatileacidity+citricacid+chlorides+pH+sulphates+contribso2+acucaralcool,
-              data=VinhosBrancosNum)
+modelo0 <- lm(quality ~ . ,
+              data=treinamento_comPCA)
 
 
 
-modelo1 <- lm(quality ~ fixedacidity+volatileacidity+citricacid+chlorides+pH+sulphates+
-                        totalsulfurdioxide+freesulfurdioxide+density+residualsugar+alcohol,
-              data=VinhosBrancosNum)
+modelo1 <- lm(quality ~ . ,
+              data=treinamento_semPCA)
 
 
 
@@ -708,28 +740,26 @@ round(t(sapply(modl, measures)), 3)
 
 # Modelo de regressão linear com o modelo aplicado o PCA
 print("Modelo com regressão linear aplicada sobre o modelo com atributos gerados pelo PCA")
-result <- testa.modelo(modelo=modelo0,valores_observados=quality,tit_grafico = "Linear com PCA")
+result <- testa.modelo(modelo=modelo0, dataset=teste_comPCA, valores_observados=teste_comPCA$quality, tit_grafico = "Linear com PCA")
 
 
 
 # Modelo com os dados completos sem transformação via PCA
 print("Modelo de regressão linear aplicada sobre o modelo com todos os atributos")
-result <- testa.modelo(modelo=modelo1,valores_observados=quality,tit_grafico = "Linear Completo")
+result <- testa.modelo(modelo=modelo1, dataset=teste_semPCA, valores_observados=teste_semPCA$quality, tit_grafico = "Linear Completo")
 
 
 ##### UTILIZANDO FORWARD,BACKWARD OU BOTH 
 
-VinhosBrancosStep <- VinhosBrancosNum
-VinhosBrancosStep$contribso2 <- NULL 
-VinhosBrancosStep$acucaralcool <- NULL 
+VinhosBrancosStep <- treinamento_semPCA
+
 
 modelo.base <- lm(quality ~ fixedacidity,
               data=VinhosBrancosStep)
 
 
 
-modelo.completo <- lm(quality ~ fixedacidity+volatileacidity+citricacid+chlorides+pH+sulphates+
-                        totalsulfurdioxide+freesulfurdioxide+density+residualsugar+alcohol,
+modelo.completo <- lm(quality ~ . ,
               data=VinhosBrancosStep)
 
 
@@ -742,6 +772,7 @@ forward<-step(modelo.base,direction="forward")
 
 backward<-step(modelo.completo,direction="backward")
 
+
 stepwise<-step(modelo.medio,direction="both")
  
 
@@ -753,18 +784,17 @@ round(t(sapply(modl, measures)), 3)
 
 ##### TESTE DE PREDIÇÃO DOS MODELOS #######
 print("Modelo de regressão linear utilizando a estratégia forward nos vinhos brancos com todos os atributos")
-result<-testa.modelo(modelo=forward,valores_observados=quality,tit_grafico="Linear com forward")
+result<-testa.modelo(modelo=forward, dataset=teste_semPCA, valores_observados=teste_semPCA$quality, tit_grafico="Linear com forward")
 
 
 print("Modelo de regressão linear utilizando a estratégia backward nos vinhos brancos com todos os atributos")
-result<-testa.modelo(modelo=backward,valores_observados=quality,tit_grafico = "Linear com backward")
+result<-testa.modelo(modelo=backward, dataset=teste_semPCA, valores_observados=teste_semPCA$quality, tit_grafico = "Linear com backward")
 
 
 print("Modelo de regressão linear utilizando a estratégia both nos vinhos brancos com todos os atributos")
-result<-testa.modelo(modelo=stepwise,valores_observados=quality,tit_grafico = "Linear com both")
-
-
+result<-testa.modelo(modelo=stepwise, dataset=teste_semPCA, valores_observados=teste_semPCA$quality, tit_grafico = "Linear com both")
 ```
+
 
 ```{r}
 
@@ -801,16 +831,14 @@ library(rpart.plot)
 library(rpart)
 
 
-attach(VinhosBrancosNum)
-
-modelo_Valor_tree <- rpart (quality ~ fixedacidity+volatileacidity+citricacid+chlorides+pH+
-                                      sulphates+contribso2+acucaralcool, data=VinhosBrancosNum, 
+modelo_Valor_tree0 <- rpart (quality ~ . ,
+                            data = treinamento_comPCA, 
                             cp = 0.001,minsplit = 5,maxdepth=10)
 
 
 
 # Faz o Gráfico
-rpart.plot(modelo_Valor_tree, type=4, extra=1, under=FALSE, clip.right.labs=TRUE,
+rpart.plot(modelo_Valor_tree0, type=4, extra=1, under=FALSE, clip.right.labs=TRUE,
            fallen.leaves=FALSE,   digits=2, varlen=-10, faclen=20,
            cex=0.4, tweak=1.7,
            compress=TRUE,
@@ -823,12 +851,9 @@ rpart.plot(modelo_Valor_tree, type=4, extra=1, under=FALSE, clip.right.labs=TRUE
 ```{r}
 library(rpart)
 
-attach(VinhosBrancosNum)
 
 print("Modelo de Árvore de regressão com aplicação de PCA - atributos retirados")
-result<-testa.modelo(modelo=modelo_Valor_tree ,valores_observados = quality,tit_grafico = "Árvore de Regressão com PCA",
-             sumario=FALSE)
-
+result<-testa.modelo(modelo=modelo_Valor_tree0, dataset=teste_comPCA, valores_observados=teste_comPCA$quality, tit_grafico = "Árvore de Regressão com PCA", sumario=FALSE)
  
 
 ```
@@ -837,16 +862,15 @@ result<-testa.modelo(modelo=modelo_Valor_tree ,valores_observados = quality,tit_
 ```{r fig.width=22, fig.height=18,echo=FALSE}
 
 
-modelo_Valor_tree <- rpart (quality ~ fixedacidity+volatileacidity+citricacid+chlorides+pH+sulphates+
-                            totalsulfurdioxide+freesulfurdioxide+
-                            density+residualsugar+alcohol, data=VinhosBrancosNum, 
+modelo_Valor_tree1 <- rpart (quality ~ . , 
+                            data = treinamento_semPCA, 
                             cp = 0.001,minsplit = 5,maxdepth=10)
 
 
 
 
 # Faz o Gráfico
-rpart.plot(modelo_Valor_tree, type=4, extra=1, under=FALSE, clip.right.labs=TRUE,
+rpart.plot(modelo_Valor_tree1, type=4, extra=1, under=FALSE, clip.right.labs=TRUE,
            fallen.leaves=FALSE,   digits=2, varlen=-10, faclen=20,
            cex=0.4, tweak=1.7,
            compress=TRUE,
@@ -859,15 +883,63 @@ rpart.plot(modelo_Valor_tree, type=4, extra=1, under=FALSE, clip.right.labs=TRUE
 ```{r}
 library(rpart)
 
-attach(VinhosBrancosNum)
 
 print("Modelo de Árvore de regressão com todos os atributos - sem aplicação de PCA")
-result<-testa.modelo(modelo=modelo_Valor_tree ,valores_observados = quality,
-                     tit_grafico = "Árvore de Regressão completo",
-                     sumario=FALSE)
+result<-testa.modelo(modelo=modelo_Valor_tree1, dataset=teste_semPCA, valores_observados=teste_semPCA$quality, tit_grafico = "Árvore de Regressão completa", sumario=FALSE)
 
 ```
 
+
+
+```{r}
+
+# Regressão Logística
+
+treinamento_comPCA %>% 
+  mutate(quality_rel = quality/10) -> treinamento_comPCA_rel
+
+treinamento_comPCA$quality <- NULL
+
+treinamento_semPCA %>% 
+  mutate(quality_rel = quality/10) -> treinamento_semPCA_rel
+
+treinamento_semPCA$quality <- NULL
+
+teste_comPCA %>% 
+  mutate(quality_rel = quality/10) -> teste_comPCA_rel
+
+teste_comPCA$quality <- NULL
+
+teste_semPCA %>% 
+  mutate(quality_rel = quality/10) -> teste_semPCA_rel
+
+teste_semPCA$quality <- NULL
+
+
+# Regressão Logística com a aplicação do PCA
+
+modelo_logistica0 <- glm(quality_rel ~ . , 
+                        family = binomial(link = 'logit'),
+                        data = treinamento_comPCA_rel)
+
+
+print("Modelo de Regressão Logística com aplicação de PCA - atributos retirados")
+result<-testa.modelo(modelo=modelo_logistica0, dataset=teste_comPCA_rel, valores_observados=teste_comPCA_rel$quality_rel, tit_grafico = "Regressão Logística com PCA", sumario=FALSE)
+
+
+
+# Regressão Logística sem a aplicação de PCA
+
+modelo_logistica1 <- glm(quality_rel ~ . , 
+                        family = binomial(link = 'logit'),
+                        data = treinamento_semPCA_rel)
+
+
+print("Modelo de Regressão Logística com todos os atributos - sem aplicação de PCA")
+result<-testa.modelo(modelo=modelo_logistica1, dataset=teste_semPCA_rel, valores_observados=teste_semPCA_rel$quality_rel, tit_grafico = "Regressão Logística completa", sumario=FALSE)
+
+
+```
 
 
 
