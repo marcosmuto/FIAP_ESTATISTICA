@@ -187,7 +187,7 @@ Por esta tabela, pode-se deduzir que os vinhos brancos são normalmente percebid
 
 <br><br>
 
-#### Retmoção de valores nulos ou zerados 
+#### Remoção de valores nulos ou zerados 
 
 Pelos resultados observados de forma tabular, temos que apenas o atributo <b>citricacid</b> possui valores zerados.
 
@@ -697,15 +697,25 @@ modl <- list(m1 = modelo0,m2=modelo1)
 round(t(sapply(modl, measures)), 3)
 
 
-# Modelo de regressão linear com o modelo aplicado o PCA
+# Modelo de regressão linear com o modelo aplicado o PCA - treinamento
 print("Modelo com regressão linear aplicada sobre o modelo com atributos gerados pelo PCA")
-result <- testa.modelo(modelo=modelo0, dataset=teste_comPCA, valores_observados=teste_comPCA$quality, tit_grafico = "Linear com PCA")
+result <- testa.modelo(modelo=modelo0, valores_observados=treinamento_comPCA$quality, tit_grafico = "Linear com PCA - treino")
+
+
+# Modelo de regressão linear com o modelo aplicado o PCA - teste
+print("Modelo com regressão linear aplicada sobre o modelo com atributos gerados pelo PCA")
+result <- testa.modelo(modelo=modelo0, dataset=teste_comPCA, valores_observados=teste_comPCA$quality, tit_grafico = "Linear com PCA - teste")
 
 
 
-# Modelo com os dados completos sem transformação via PCA
+# Modelo com os dados completos sem transformação via PCA - treinamento
 print("Modelo de regressão linear aplicada sobre o modelo com todos os atributos")
-result <- testa.modelo(modelo=modelo1, dataset=teste_semPCA, valores_observados=teste_semPCA$quality, tit_grafico = "Linear Completo")
+result <- testa.modelo(modelo=modelo1, valores_observados=treinamento_semPCA$quality, tit_grafico = "Linear Completo - treino")
+
+
+# Modelo com os dados completos sem transformação via PCA - teste
+print("Modelo de regressão linear aplicada sobre o modelo com todos os atributos")
+result <- testa.modelo(modelo=modelo1, dataset=teste_semPCA, valores_observados=teste_semPCA$quality, tit_grafico = "Linear Completo - teste")
 
 
 ##### UTILIZANDO FORWARD,BACKWARD OU BOTH 
@@ -742,16 +752,28 @@ round(t(sapply(modl, measures)), 3)
 
 
 ##### TESTE DE PREDIÇÃO DOS MODELOS #######
-print("Modelo de regressão linear utilizando a estratégia forward nos vinhos brancos com todos os atributos")
-result<-testa.modelo(modelo=forward, dataset=teste_semPCA, valores_observados=teste_semPCA$quality, tit_grafico="Linear com forward")
 
 
-print("Modelo de regressão linear utilizando a estratégia backward nos vinhos brancos com todos os atributos")
-result<-testa.modelo(modelo=backward, dataset=teste_semPCA, valores_observados=teste_semPCA$quality, tit_grafico = "Linear com backward")
+print("Modelo de regressão linear utilizando a estratégia forward nos vinhos brancos com todos os atributos - treinamento")
+result<-testa.modelo(modelo=forward, valores_observados=treinamento_semPCA$quality, tit_grafico="Linear com forward - treino")
 
 
-print("Modelo de regressão linear utilizando a estratégia both nos vinhos brancos com todos os atributos")
-result<-testa.modelo(modelo=stepwise, dataset=teste_semPCA, valores_observados=teste_semPCA$quality, tit_grafico = "Linear com both")
+print("Modelo de regressão linear utilizando a estratégia forward nos vinhos brancos com todos os atributos - teste")
+result<-testa.modelo(modelo=forward, dataset=teste_semPCA, valores_observados=teste_semPCA$quality, tit_grafico="Linear com forward - teste")
+
+
+print("Modelo de regressão linear utilizando a estratégia backward nos vinhos brancos com todos os atributos - treinamento")
+result<-testa.modelo(modelo=backward, valores_observados=treinamento_semPCA$quality, tit_grafico = "Linear com backward - treino")
+
+print("Modelo de regressão linear utilizando a estratégia backward nos vinhos brancos com todos os atributos - teste")
+result<-testa.modelo(modelo=backward, dataset=teste_semPCA, valores_observados=teste_semPCA$quality, tit_grafico = "Linear com backward - teste")
+
+
+print("Modelo de regressão linear utilizando a estratégia both nos vinhos brancos com todos os atributos - treinamento")
+result<-testa.modelo(modelo=stepwise, valores_observados=treinamento_semPCA$quality, tit_grafico = "Linear com both - treino")
+
+print("Modelo de regressão linear utilizando a estratégia both nos vinhos brancos com todos os atributos - teste")
+result<-testa.modelo(modelo=stepwise, dataset=teste_semPCA, valores_observados=teste_semPCA$quality, tit_grafico = "Linear com both - teste")
 ```
 
 
@@ -810,9 +832,11 @@ rpart.plot(modelo_Valor_tree0, type=4, extra=1, under=FALSE, clip.right.labs=TRU
 ```{r, message=FALSE}
 library(rpart)
 
+print("Modelo de Árvore de regressão com aplicação de PCA (atributos retirados) - treinamento")
+result<-testa.modelo(modelo=modelo_Valor_tree0, valores_observados=treinamento_comPCA$quality, tit_grafico = "Árvore de Regressão com PCA - treino", sumario=FALSE)
 
-print("Modelo de Árvore de regressão com aplicação de PCA - atributos retirados")
-result<-testa.modelo(modelo=modelo_Valor_tree0, dataset=teste_comPCA, valores_observados=teste_comPCA$quality, tit_grafico = "Árvore de Regressão com PCA", sumario=FALSE)
+print("Modelo de Árvore de regressão com aplicação de PCA (atributos retirados) - teste")
+result<-testa.modelo(modelo=modelo_Valor_tree0, dataset=teste_comPCA, valores_observados=teste_comPCA$quality, tit_grafico = "Árvore de Regressão com PCA - teste", sumario=FALSE)
  
 
 ```
@@ -842,9 +866,11 @@ rpart.plot(modelo_Valor_tree1, type=4, extra=1, under=FALSE, clip.right.labs=TRU
 ```{r}
 library(rpart)
 
+print("Modelo de Árvore de regressão com todos os atributos sem aplicação de PCA - treinamento")
+result<-testa.modelo(modelo=modelo_Valor_tree1, valores_observados=treinamento_semPCA$quality, tit_grafico = "Árvore de Regressão completa - treino", sumario=FALSE)
 
-print("Modelo de Árvore de regressão com todos os atributos - sem aplicação de PCA")
-result<-testa.modelo(modelo=modelo_Valor_tree1, dataset=teste_semPCA, valores_observados=teste_semPCA$quality, tit_grafico = "Árvore de Regressão completa", sumario=FALSE)
+print("Modelo de Árvore de regressão com todos os atributos sem aplicação de PCA - teste")
+result<-testa.modelo(modelo=modelo_Valor_tree1, dataset=teste_semPCA, valores_observados=teste_semPCA$quality, tit_grafico = "Árvore de Regressão completa - teste", sumario=FALSE)
 
 ```
 
