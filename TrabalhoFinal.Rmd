@@ -548,7 +548,7 @@ A partir dessas proximidades entre os auto vetores, e considerando as correlaç�
 library(dplyr)
 
 dados_padronizados %>% select(totalsulfurdioxide,freesulfurdioxide, density,residualsugar,alcohol) -> df 
-pca2 <- prcomp(df, scale=TRUE)
+pca <- prcomp(df, scale=TRUE)
 print(get_eig(pca2))
 
 ```
@@ -559,15 +559,23 @@ Por fim, os atributos originais foram excluídos do modelo por serem passíveis 
 <br><br>
 
 ```{r, echo=FALSE}
-VinhosBrancosNum$pca1 = pca2$x[,1]
+VinhosBrancosNum$pca1 = pca$x[,1]
 
 print("Histograma do Primeiro Componente")
 hist(VinhosBrancosNum$pca1)
 
-VinhosBrancosNum$pca2 = pca2$x[,2]
+VinhosBrancosNum$pca2 = pca$x[,2]
 
 print("Histograma do Segundo Componente")
 hist(VinhosBrancosNum$pca2)
+
+
+#Teste com 3 componente 
+VinhosBrancosNum$pca3 = pca$x[,3]
+
+print("Histograma do Terceiro Componente")
+hist(VinhosBrancosNum$pca3)
+
 
 ```
 
@@ -656,11 +664,13 @@ teste %>%
 
 
 # Dados com a aplicação do PCA
+#Teste componente 3
 treinamento %>%
-  select(fixedacidity, volatileacidity, citricacid, chlorides, pH, sulphates, pca1, pca2, quality) -> treinamento_comPCA
+  select(fixedacidity, volatileacidity, citricacid, chlorides, pH, sulphates, pca1, pca2, pca3,quality) -> treinamento_comPCA
 
+#Teste componente 3
 teste %>% 
-  select(fixedacidity, volatileacidity, citricacid, chlorides, pH, sulphates, pca1, pca2, quality) -> teste_comPCA
+  select(fixedacidity, volatileacidity, citricacid, chlorides, pH, sulphates, pca1, pca2, pca3,quality) -> teste_comPCA
 
 
 ```
