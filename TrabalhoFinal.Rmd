@@ -29,7 +29,8 @@ packages <- c("psych",
               "asbio",
               "car",
               "rpart",
-              "rpart.plot")
+              "rpart.plot",
+              "MASS")
 
 
 
@@ -842,6 +843,8 @@ result<-testa.modelo(modelo=modelo_Valor_tree0, dataset=teste_comPCA, valores_ob
 ```
 
 
+
+
 ```{r fig.width=22, fig.height=18,echo=FALSE, warning=FALSE}
 
 
@@ -875,54 +878,70 @@ result<-testa.modelo(modelo=modelo_Valor_tree1, dataset=teste_semPCA, valores_ob
 ```
 
 
+```{r}
+
+# Árvore de Decisão com a aplicação do PCA
+
+modelo_Valor_tree_class0 <- rpart (quality ~ . ,
+                            data = treinamento_comPCA,
+                            method = 'class')
+
+
+
+# Faz o Gráfico
+rpart.plot(modelo_Valor_tree_class0, type=4, extra=1, under=FALSE, clip.right.labs=TRUE,
+           fallen.leaves=FALSE,   digits=2, varlen=-10, faclen=20,
+           cex=0.4, tweak=1.7,
+           compress=TRUE,
+           snip=FALSE)
+```
+
+
+
+```{r}
+
+# Árvore de Decisão sem a aplicação do PCA
+
+modelo_Valor_tree_class1 <- rpart (quality ~ . ,
+                            data = treinamento_semPCA,
+                            method = 'class')
+
+
+
+# Faz o Gráfico
+rpart.plot(modelo_Valor_tree_class1, type=4, extra=1, under=FALSE, clip.right.labs=TRUE,
+           fallen.leaves=FALSE,   digits=2, varlen=-10, faclen=20,
+           cex=0.4, tweak=1.7,
+           compress=TRUE,
+           snip=FALSE)
+```
+
+
+
 
 ```{r, warning=FALSE}
 
-# Regressão Logística
+# Regressão Logística Ordenada
 
-treinamento_comPCA %>% 
-  mutate(quality_rel = quality/10) -> treinamento_comPCA_rel
-
-treinamento_comPCA$quality <- NULL
-
-treinamento_semPCA %>% 
-  mutate(quality_rel = quality/10) -> treinamento_semPCA_rel
-
-treinamento_semPCA$quality <- NULL
-
-teste_comPCA %>% 
-  mutate(quality_rel = quality/10) -> teste_comPCA_rel
-
-teste_comPCA$quality <- NULL
-
-teste_semPCA %>% 
-  mutate(quality_rel = quality/10) -> teste_semPCA_rel
-
-teste_semPCA$quality <- NULL
-
+library(MASS)
 
 # Regressão Logística com a aplicação do PCA
 
-modelo_logistica0 <- glm(quality_rel ~ . , 
-                        family = binomial(link = 'logit'),
-                        data = treinamento_comPCA_rel)
+modelo_logistica0 <- polr(factor(quality) ~ . ,
+                          data = treinamento_comPCA,
+                          Hess = TRUE)
 
-
-print("Modelo de Regressão Logística com aplicação de PCA - atributos retirados")
-result<-testa.modelo(modelo=modelo_logistica0, dataset=teste_comPCA_rel, valores_observados=teste_comPCA_rel$quality_rel, tit_grafico = "Regressão Logística com PCA", sumario=FALSE)
+summary(modelo_logistica0)
 
 
 
 # Regressão Logística sem a aplicação de PCA
 
-modelo_logistica1 <- glm(quality_rel ~ . , 
-                        family = binomial(link = 'logit'),
-                        data = treinamento_semPCA_rel)
+modelo_logistica1 <- polr(factor(quality) ~ . ,
+                          data = treinamento_semPCA,
+                          Hess = TRUE)
 
-
-print("Modelo de Regressão Logística com todos os atributos - sem aplicação de PCA")
-result<-testa.modelo(modelo=modelo_logistica1, dataset=teste_semPCA_rel, valores_observados=teste_semPCA_rel$quality_rel, tit_grafico = "Regressão Logística completa", sumario=FALSE)
-
+summary(modelo_logistica1)
 
 ```
 
@@ -934,12 +953,8 @@ Inicialmente será verificao a quantidade ideal de clusters para agrupar os dado
 
 ```{r, echo=FALSE}
 
-treinamento %>%
-  select(fixedacidity, volatileacidity, citricacid, chlorides, pH, sulphates, totalsulfurdioxide,
-         freesulfurdioxide, density, residualsugar, alcohol) -> NS_treinamento_semPCA
-
-treinamento %>%
-  select(fixedacidity, volatileacidity, citricacid, chlorides, pH, sulphates, pca1, pca2) -> NS_treinamento_comPCA
+treinamento_semPCA[ ,-12] -> NS_treinamento_semPCA
+treinamento_comPCA[ ,-9] -> NS_treinamento_comPCA
 
 
 wss <- (nrow(NS_treinamento_semPCA)-1)*sum(apply(NS_treinamento_semPCA,2,var))
