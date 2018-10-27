@@ -903,9 +903,8 @@ result<-testa.modelo(modelo=modelo_logistica1, dataset=teste_semPCA_rel, valores
 
 # Algoritmo não supervisionado
 
-A seguir será utilizado um algoritmo não supervisionado na base para agrupamento das amostras.
-Para isso, foi utilizado o k-means com 7 clusters, sendo que cada cluster tentará representar um indice de qualidade (3 a 9 na base).
-Além disso, para o treinamento do modelo, não foi utilizada a variável quality.
+A seguir será analisado o uso de k-means para agrupamento dos dados.
+Inicialmente será verificao a quantidade ideal de clusters para agrupar os dados considerando até 10 clusters
 
 ```{r, echo=FALSE}
 
@@ -913,29 +912,64 @@ treinamento %>%
   select(fixedacidity, volatileacidity, citricacid, chlorides, pH, sulphates, totalsulfurdioxide,
          freesulfurdioxide, density, residualsugar, alcohol) -> NS_treinamento_semPCA
 
-# Dados com a aplicação do PCA
 treinamento %>%
   select(fixedacidity, volatileacidity, citricacid, chlorides, pH, sulphates, pca1, pca2) -> NS_treinamento_comPCA
 
 
-kmeans_semPCA <- kmeans(NS_treinamento_semPCA, 7)
+wss <- (nrow(NS_treinamento_semPCA)-1)*sum(apply(NS_treinamento_semPCA,2,var))
+for (i in 2:10) 
+  wss[i] <- sum(kmeans(NS_treinamento_semPCA, centers=i)$withinss)
 
-kmeans_comPCA <- kmeans(NS_treinamento_comPCA, 7)
+plot(1:10, wss, type="b", xlab="Numero de Clusters", ylab="Soma dos quadrados da distancia dentro do grupo")
 
-print("Quantidade de amostras por qualidade")
-table(treinamento$quality)
-print("")
+```
 
-print("Quantidade de amostras por cluster sem PCA")
-kmeans_semPCA$size
-print("")
+Pelo gráfico acima, nota-se que 3 é a quantidade ideal de clusters já que a partir desse número a distancia entre os dados e o cluster não sofre variação considerável.
 
-print("Quantidade de amostras por cluster com PCA")
-kmeans_comPCA$size
-print("")
+
+k-means com todos os atributos
+
+
+```{r warning=FALSE, message=FALSE, echo=FALSE}
+# fixedacidity, volatileacidity, citricacid, chlorides, pH, sulphates, totalsulfurdioxide,
+# freesulfurdioxide, density, residualsugar, alcohol
+
+modelo.kmeans <- kmeans(NS_treinamento_semPCA, centers = 3)
+
+attach(NS_treinamento_semPCA)
+plot(NS_treinamento_semPCA, col = modelo.kmeans$cluster, cex = 2)
+points(modelo.kmeans$centers, col = 1:3, pch =3, cex = 3, lwd = 2)
+
+```
+
+Percebe-se que há uma boa distinção dos grupos entre o totalsulfurdioxide e todos os outros atributos. No entanto para as outras variáveis os grupos ficam dispersos quase se sobrepondo.
+
+Abaixo um gráfico entre totalsulfurdioxide e o residualsugar com os 3 grupos
+
+```{r warning=FALSE, message=FALSE, echo=FALSE}
+# fixedacidity, volatileacidity, citricacid, chlorides, pH, sulphates, totalsulfurdioxide,
+# freesulfurdioxide, density, residualsugar, alcohol
+
+modelo.kmeans <- kmeans(NS_treinamento_semPCA, centers = 3)
+
+attach(NS_treinamento_semPCA)
+plot(totalsulfurdioxide, residualsugar, col = modelo.kmeans$cluster, cex = 2)
+points(modelo.kmeans$centers, col = 1:3, pch =3, cex = 3, lwd = 2)
 
 ```
 
 
-Observando a quantidade de amostras em cada cluster, verifica-se que há uma grande discrepância de números com relação as amostras por qualidade.
-Sendo assim, o uso do k-means não é recomendado na tentativa de agrupar as amostras pela qualidade.
+Em seguida um gráfico entre ph e volatileacidity com os 3 grupos
+
+```{r warning=FALSE, message=FALSE, echo=FALSE}
+# fixedacidity, volatileacidity, citricacid, chlorides, pH, sulphates, totalsulfurdioxide,
+# freesulfurdioxide, density, residualsugar, alcohol
+
+modelo.kmeans <- kmeans(NS_treinamento_semPCA, centers = 3)
+
+attach(NS_treinamento_semPCA)
+plot(pH, volatileacidity, col = modelo.kmeans$cluster, cex = 2)
+points(modelo.kmeans$centers, col = 1:3, pch =3, cex = 3, lwd = 2)
+```
+
+Desse modo, o uso de k-means não é recomendável.
