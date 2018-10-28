@@ -685,7 +685,7 @@ testa.modelo <- function(modelo=NULL,valores_observados,valores_preditos=NULL, d
     # grafico residuo
     if (!is.null(modelo)){ 
         rs <- resid(modelo)
-        plot(predict(modelo), rs, xlab = "Preditor linear",ylab = "Residuos",main=tit_grafico)
+        plot(predict(modelo), rs, xlab = "Qualidade predita",ylab = "Residuos",main=tit_grafico)
         abline(h = 0, lty = 2)
     }
     
@@ -728,8 +728,8 @@ testa.modelo_res <- function(modelo=NULL,valores_observados,valores_preditos=NUL
   
     #Calcula a média do quadrado das diferenças entre os valores preditos e os observados 
     mse <- mean((valores_observados - fit)^2)
-    print(paste0("MSE para o modelo---> ",sqrt(mse)))
-    erro_usando_media <- mean((quality - mean(quality))^2)
+    print(paste0("RMSE para o modelo---> ",sqrt(mse)))
+    erro_usando_media <- mean((fit - mean(valores_observados))^2)
     print(paste0("Erro médio em relação a média para o modelo---> ",sqrt(erro_usando_media)))
     
     return (NULL)    
@@ -796,23 +796,23 @@ round(t(sapply(modl, measures)), 3)
 
 
 # Modelo de regressão linear com o modelo aplicado o PCA - treinamento
-print("Modelo com regressão linear aplicada sobre o modelo com atributos gerados pelo PCA - treinamento")
+print("Modelo com regressão linear aplicada sobre o modelo com PCA - treinamento")
 result <- testa.modelo(modelo=modelo0, valores_observados=treinamento_comPCA$quality, tit_grafico = "Linear com PCA - treino")
 
 
 # Modelo de regressão linear com o modelo aplicado o PCA - teste
-print("Modelo com regressão linear aplicada sobre o modelo com atributos gerados pelo PCA - teste")
+print("Modelo com regressão linear aplicada sobre o modelo com PCA - teste")
 result <- testa.modelo(modelo=modelo0, dataset=teste_comPCA, valores_observados=teste_comPCA$quality, tit_grafico = "Linear com PCA - teste")
 
 
 
 # Modelo com os dados completos sem transformação via PCA - treinamento
-print("Modelo de regressão linear aplicada sobre o modelo com todos os atributos - treinamento")
+print("Modelo de regressão linear aplicada sobre o modelo sem PCA - treinamento")
 result <- testa.modelo(modelo=modelo1, valores_observados=treinamento_semPCA$quality, tit_grafico = "Linear Completo - treino")
 
 
-# Modelo com os dados completos sem transformação via PCA - teste
-print("Modelo de regressão linear aplicada sobre o modelo com todos os atributos - teste")
+# Modelo com os dados completos sem transformação  PCA - teste
+print("Modelo de regressão linear aplicada sobre o modelo sem PCA - teste")
 result <- testa.modelo(modelo=modelo1, dataset=teste_semPCA, valores_observados=teste_semPCA$quality, tit_grafico = "Linear Completo - teste")
 
 
@@ -930,9 +930,9 @@ rpart.plot(modelo_Valor_tree0, type=4, extra=1, under=FALSE, clip.right.labs=TRU
 
 ```{r, message=FALSE}
 library(rpart)
-print("Modelo de Árvore de regressão com aplicação de PCA (atributos retirados) - treinamento")
+print("Modelo de Árvore de regressão com PCA  - treinamento")
 result<-testa.modelo(modelo=modelo_Valor_tree0, valores_observados=treinamento_comPCA$quality, tit_grafico = "Árvore de Regressão com PCA - treino", sumario=FALSE)
-print("Modelo de Árvore de regressão com aplicação de PCA (atributos retirados) - teste")
+print("Modelo de Árvore de regressão com PCA  - teste")
 result<-testa.modelo(modelo=modelo_Valor_tree0, dataset=teste_comPCA, valores_observados=teste_comPCA$quality, tit_grafico = "Árvore de Regressão com PCA - teste", sumario=FALSE)
  
 ```
@@ -956,9 +956,9 @@ rpart.plot(modelo_Valor_tree1, type=4, extra=1, under=FALSE, clip.right.labs=TRU
 
 ```{r}
 library(rpart)
-print("Modelo de Árvore de regressão com todos os atributos sem aplicação de PCA - treinamento")
+print("Modelo de Árvore de regressão com todos os atributos sem PCA - treinamento")
 result<-testa.modelo(modelo=modelo_Valor_tree1, valores_observados=treinamento_semPCA$quality, tit_grafico = "Árvore de Regressão completa - treino", sumario=FALSE)
-print("Modelo de Árvore de regressão com todos os atributos sem aplicação de PCA - teste")
+print("Modelo de Árvore de regressão com todos os atributos sem PCA - teste")
 result<-testa.modelo(modelo=modelo_Valor_tree1, dataset=teste_semPCA, valores_observados=teste_semPCA$quality, tit_grafico = "Árvore de Regressão completa - teste", sumario=FALSE)
 ```
 
@@ -975,9 +975,9 @@ modelo_random_forest0 <- randomForest(quality ~ . ,
 
 
 ```{r}
-print("Modelo de Random Forest com a aplicação de PCA - treinamento")
+print("Modelo de Random Forest com PCA - treinamento")
 result<-testa.modelo_res(modelo=modelo_random_forest0, valores_observados=treinamento_comPCA$quality)
-print("Modelo de Random Forest com todos os atributos sem aplicação de PCA - teste")
+print("Modelo de Random Forest com PCA - teste")
 result<-testa.modelo_res(modelo=modelo_random_forest0, dataset=teste_comPCA, valores_observados=teste_semPCA$quality)
 ```
 
@@ -995,9 +995,9 @@ modelo_random_forest1 <- randomForest(quality ~ . ,
 
 ```{r}
 library(rpart)
-print("Modelo de Random Forest com todos os atributos sem aplicação de PCA - treinamento")
+print("Modelo de Random Forest com todos os atributos sem PCA - treinamento")
 result<-testa.modelo_res(modelo=modelo_random_forest1, valores_observados=treinamento_semPCA$quality)
-print("Modelo de Random Forest com todos os atributos sem aplicação de PCA - teste")
+print("Modelo de Random Forest com todos os atributos sem PCA - teste")
 result<-testa.modelo_res(modelo=modelo_random_forest1, dataset=teste_semPCA, valores_observados=teste_semPCA$quality)
 ```
 
@@ -1014,8 +1014,11 @@ modelo_Valor_tree_class0 <- rpart (quality ~ . ,
 ```{r}
 # Matriz de Confusão - Árvore de Decisão com a aplicação de PCA
 library(caret)
+print("Modelo de árvore de decisão com PCA - treinamento")
 # Dataset de treinamento
 confusionMatrix(predict(modelo_Valor_tree_class0, type = 'class'), factor(treinamento_comPCA$quality))
+
+print("Modelo de árvore de decisão com PCA - teste")
 # Dataset de teste
 confusionMatrix(predict(modelo_Valor_tree_class0, newdata = teste_comPCA, type = 'class'), factor(teste_comPCA$quality))
 ```
@@ -1034,8 +1037,11 @@ modelo_Valor_tree_class1 <- rpart (quality ~ . ,
 # Matriz de Confusão - Árvore de Decisão sem a aplicação de PCA
 library(caret)
 # Dataset de treinamento
+
+print("Modelo de árvore de decisão sem PCA - treinamento")
 confusionMatrix(predict(modelo_Valor_tree_class1, type = 'class'), factor(treinamento_semPCA$quality))
 # Dataset de teste
+print("Modelo de árvore de decisão sem PCA - teste")
 confusionMatrix(predict(modelo_Valor_tree_class1, newdata = teste_semPCA, type = 'class'), factor(teste_semPCA$quality))
 ```
 
@@ -1059,8 +1065,10 @@ modelo_logistica0 <- polr(factor(quality) ~ . ,
 # Matriz de Confusão - Regressão Logística Ordinal com a aplicação de PCA
 library(caret)
 # Dataset de treinamento
+print("Modelo de regressão logística com PCA - treinamento")
 confusionMatrix(predict(modelo_logistica0), factor(treinamento_comPCA$quality))
 # Dataset de teste
+print("Modelo de regressão logística com PCA - teste")
 confusionMatrix(predict(modelo_logistica0, newdata = teste_comPCA), factor(teste_comPCA$quality))
 
 ```
@@ -1081,8 +1089,10 @@ modelo_logistica1 <- polr(factor(quality) ~ . ,
 # Matriz de Confusão - Regressão Logística Ordinal sem a aplicação de PCA
 library(caret)
 # Dataset de treinamento
+print("Modelo de regressão logística sem PCA - treinamento")
 confusionMatrix(predict(modelo_logistica1), factor(treinamento_semPCA$quality))
 # Dataset de teste
+print("Modelo de regressão logística sem PCA - teste")
 confusionMatrix(predict(modelo_logistica1, newdata = teste_semPCA), factor(teste_semPCA$quality))
 ```
 
@@ -1090,10 +1100,13 @@ confusionMatrix(predict(modelo_logistica1, newdata = teste_semPCA), factor(teste
 
 
 
+<br><br>
+
 
 # Datasets
 
-Com a utilização do PCA, surgem 2 datsets a serem submetidos aos algoritmos de predição ou classificação. 
+<br>
+Com a utilização do PCA, surgem 2 datasets a serem submetidos aos algoritmos de predição ou classificação. 
 
 <b>Primeiro dataset:</b> chamado de "Com PCA"
 
@@ -1143,6 +1156,7 @@ Com a utilização do PCA, surgem 2 datsets a serem submetidos aos algoritmos de
 
 # Técnicas utilizadas 
 
+<br>
 As técnicas de predição e classificação foram aplicadas tanto no primeiro como no segundo dataset. 
 
 Para métrica de qualidade dos modelos, foi utilizado o RMSE para os modelos preditivos e a acurácia da matriz de confusão para os de classificação. 
@@ -1158,7 +1172,7 @@ Os indicadores de qualidade considerados foram aqueles obtidos na amostra de tes
   * No modelo com PCA, obteve-se o RMSE de 0.7529
   * Os resíduos se distribuem aleatoriamente no gráfico de dispersão.
   
-*   <b>Árvore de Regressão</b> encontra uma sequência de regras comparativas envolvendo as variáveis independentes, representada como uma árvore, e ao chegar a folha dessa estrutura, realiza uma regressão linear para estimar o valor da variável dependente
+*   <b>Árvore de Regressão</b> encontra uma sequência de regras comparativas envolvendo as variáveis independentes, representada como uma árvore, e ao chegar à folha dessa estrutura, realiza uma regressão linear para estimar o valor da variável dependente
    * Com esse método, obteve-se o RMSE de 0.8302 no dataset sem PCA
    * o gráfico de dispersão mostra os resíduos distribuídos aleatoriamente 
 
@@ -1167,22 +1181,30 @@ Os indicadores de qualidade considerados foram aqueles obtidos na amostra de tes
    * Com esse método, obteve-se o RMSE de 0.7058 no dataset sem PCA
    
 * <b>Árvore de Decisão</b> é semelhante a árvore de regressão, no entanto, cada folha deve conduzir a um único valor para a variável discreta dependente.
-   * Com esse método, obteve-se uma acurácia 0.5439 no dataset com PCA
+   * Com esse método, obteve-se uma acurácia 0.5295 no dataset sem PCA
    
 * <b>Regressão Logística Ordinal</b> é uma variação da regressão logística que permite que a variável dependente seja discreta com multivalorada
-   * Com esse método, obteve-se uma acurácia 0.5363 no dataset com PCA
+   * Com esse método, obteve-se uma acurácia 0.5212 no dataset com PCA
+
+<br><br>
 
 #Análise dos modelos
 
-O melhor modelo preditivo foi o Random Forest aplicado no dataset sem PCA que apresentou um RMSE de 0.7058 e o melhor modelo de classificação foi a árvore de decisão que apresenta uma acurácia de 0.5439. 
+<br>
+O melhor modelo preditivo foi o Random Forest aplicado no dataset sem PCA que apresentou um RMSE de 0.7058 e o melhor modelo de classificação foi a árvore de decisão aplicado no dataset sem PCA que apresenta uma acurácia de 0.5295. 
 
- 
-Percebe-se que a qualidade dos modelos não é satisfatória, uma vez que o método bem óbvio e ruim, que seria sempre predizer a média da amostra apresenta um RMSE de 0.8681 e o melhor modelo preditivo apresenta RMSE de 0.7058. 
+Percebe-se que a qualidade dos modelos não é satisfatória, uma vez que o método bem óbvio e ruim, que seria sempre predizer a qualidade média da amostra de vinhos brancos apresenta um RMSE de 0.8681 e o melhor modelo preditivo apresenta RMSE de 0.7058. 
 
-E para o modelo de classificação, a melhor acurácia é de 54,39%, portanto muito próximo dos 50%, que é o equivalente a se jogar uma moeda para se determinar se o valor é confiável ou não. Para modelos de classificação, normalmente espera-se uma acurácia superior a 80%. 
+E para o modelo de classificação, a melhor acurácia é de 52,95%, portanto muito próximo dos 50%, que é o equivalente a se jogar uma moeda para se determinar se o valor é confiável ou não. Para modelos de classificação, normalmente espera-se uma acurácia superior a 80%. 
 
+Outro aspecto digno de nota é o fato da utilização do PCA ser eficiente, pois os resultados de acurácia e RMSE apresentam-se muito próximos tanto nos modelos aplicados nos datasets com PCA e sem PCA.
+
+No entanto, com exceção da Regressão Logística Ordinal, em todas as outras técnicas, o dataset sem a aplicação do PCA gerou um modelo de qualidade ligeiramente superior. Isto indica que apesar de poder gerar um modelo que potencialmente exige um menor poder computacional para as predições e classificações, cobra-se uma perda na qualidade quando se aplica o PCA. 
+
+<br><br>
 #Recomendações sobre a aprendizagem supervisionada
 
+<br>
 Há algumas hipóteses e recomendações para solucionar o problema: 
 
 * As variáveis independentes não são suficientes para explicar a variável dependente quality, deste modo, deve-se enriquecer o modelo a fim de melhorar os indicadores de desempenhos dos mesmos
