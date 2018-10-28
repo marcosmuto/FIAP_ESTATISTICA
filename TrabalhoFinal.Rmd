@@ -587,6 +587,10 @@ print(get_eig(pca))
 <<<<<<< HEAD
 Analisando a tabela acima, nota-se que os três primeiros componentes contribuem para mais de 92% da variancia da base.
 Mediante a constatação, criou-se três novos atributos pca1,pca2 e pca3 correspondendo ao primeiro e segundo componentes do PCA.
+=======
+Analisando a tabela acima, nota-se que os três primeiros componentes já contribuem para mais de 92% da variancia da base.
+Mediante a constatação, criou-se três novos atributos pca1, pca2 e pca3 correspondendo ao primeiro, segundo e terceiro componentes do PCA.
+>>>>>>> upstream/master
 Por fim, os atributos originais foram excluídos do modelo por serem passíveis de substituição sem grandes prejuízos.
 <br><br>
 
