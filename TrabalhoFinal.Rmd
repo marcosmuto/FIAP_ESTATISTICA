@@ -1,3 +1,6 @@
+
+
+
 ---
 title: "Trabalho Final - Conceitos Estatisticos para IA"
 output:
@@ -5,6 +8,14 @@ output:
     df_print: paged
   pdf_document: default
 ---
+
+<br><br>
+ Grupo :  
+           Cauê Engelmann          - RM 331199      
+           Marcelo Gulfier         - RM 330738<br>
+           Marcos Massaharu Muto   - RM 330930  
+
+<br><br>
 
 ```{r package_install, message=FALSE, echo=FALSE, results='hide', warning=FALSE}
 
@@ -135,7 +146,11 @@ Analisando a quantidade de vinhos por tipo e por qualidade, há mais vinhos do t
 #### Valores estatisticos relevantes para o vinho tinto
 
 ```{r rows.print=14, echo=FALSE}
-describe(Vinhos %>% filter(Vinho=="RED")) %>% select("Mínima"=min, "Máxima"=max, "Média"=mean, "Desvio Padrão"=sd, "Mediana"=median) -> estatTinto
+
+library(dplyr)
+
+describe(Vinhos %>% filter(Vinho=="RED")) %>% 
+  select("Mínima"=min, "Máxima"=max, "Média"=mean, "Desvio Padrão"=sd, "Mediana"=median) -> estatTinto
 estatTinto
 ```
 
@@ -143,6 +158,8 @@ estatTinto
 #### Valores estatisticos relevantes para o vinho branco
 
 ```{r rows.print=14, echo=FALSE}
+library(dplyr)
+
 describe(Vinhos %>% filter(Vinho=="WHITE")) %>% select("Mínima"=min, "Máxima"=max, "Média"=mean, "Desvio Padrão"=sd, "Mediana"=median) -> estatBranco
 estatBranco
 ```
@@ -315,12 +332,17 @@ for (atr in atributos_numericos){
 
 
 Realizados os testes T para as amostras separadas de vinhos tintos e brancos, observam-se os fatos descritos abaixo:
+
 * Para cada atributo numérico dos vinhos brancos e tintos realizou-se um teste T
 * Os testes foram parametrizados com um nível de confiança de 95%
 * O p-value de cada um dos testes apresentou valores substancialmente menores que 5%.
 
 Deste modo, para o modelo preditivo a ser desenvolvido, a partir deste ponto, iremos separar a amostras entre os
-dois tipos de vinho (tinto,branco) e prosseguiremos na criação do modelo preditivo da qualidade apenas para os vinhos brancos 
+dois tipos de vinho (tinto,branco) e prosseguiremos na criação do modelo preditivo da qualidade apenas para os vinhos brancos, sendo que um trabalho completo sobre o assunto implicaria em replicar o trabalho contido abaixo para as 
+amostras com vinhos tintos. 
+
+A amostra com vinhos brancos possui agora 4.898 elementos
+
 <br><br>
 
 
@@ -392,6 +414,9 @@ summary(VinhosBrancosSemOut[,"quality"])
 print("Teste T para a média de qualidade entre os vinhos brancos sem outliers e a amostra completa")
 print(t.test(VinhosBrancos$quality,VinhosBrancosSemOut$quality))
 
+print("Quantidade de vinhos a serem excluídos como outliers :")
+print(length(outVinhoBranco))
+
 VinhosBrancos <- VinhosBrancosSemOut
 
 ```
@@ -401,6 +426,10 @@ Os vinhos brancos selecionados como outliers não possuíam uma distribuição e
 Deste modo, realizou-se um teste T entre os vinhos brancos sem os outliers e a amostra completa, com 95% de confiança e falhou (p-value = 7,5%). Portanto as amostra possuem médias iguais.
 Por fim, os outliers foram retirados da amostra e do modelo a ser utilizado para predição. 
 
+Serão retirados 250 vinhos classificados como outliers, o que corresponde a 5,1% das 
+amostras de vinhos brancos. 
+
+Quantidade de vinhos brancos após a retirada dos outliers: 4.648 elementos
 
 <br><br>
 
@@ -555,8 +584,13 @@ print(get_eig(pca))
 
 ```
 
+<<<<<<< HEAD
+Analisando a tabela acima, nota-se que os três primeiros componentes contribuem para mais de 92% da variancia da base.
+Mediante a constatação, criou-se três novos atributos pca1,pca2 e pca3 correspondendo ao primeiro e segundo componentes do PCA.
+=======
 Analisando a tabela acima, nota-se que os três primeiros componentes já contribuem para mais de 92% da variancia da base.
 Mediante a constatação, criou-se três novos atributos pca1, pca2 e pca3 correspondendo ao primeiro, segundo e terceiro componentes do PCA.
+>>>>>>> upstream/master
 Por fim, os atributos originais foram excluídos do modelo por serem passíveis de substituição sem grandes prejuízos.
 <br><br>
 
@@ -589,11 +623,21 @@ library(latticeExtra)
 library(asbio)
 library(car)
 
+#Função para obter as medidas dos modelos
+measures <- function(x) {
+  L <- list(nobs = length(fitted(x)),
+            RMSE = summary(x)$sigma,
+            R2 = summary(x)$r.squared,
+            R2adj = summary(x)$adj.r.squared)
+  unlist(L)
+}
+
+
 #funcao para verificar o modelo
 
 testa.modelo <- function(modelo=NULL,valores_observados,valores_preditos=NULL, dataset, tit_grafico=NULL,sumario=TRUE){
     # Testa o modelo
-    #Exibe um sumário do modelo 
+    #Se não há modelo utiliza os valores previamente preditos 
     if (is.null(modelo)){
        fit = valores_preditos
     }
@@ -620,21 +664,28 @@ testa.modelo <- function(modelo=NULL,valores_observados,valores_preditos=NULL, d
         else {
           fit <- Val_pred
         }
+        
+        
     }
   
+  
+    print("*** Estatísticas sobre o desempenho do modelo ****")
+
     #Calcula a média do quadrado das diferenças entre os valores preditos e os observados 
     mse <- mean((valores_observados - fit)^2)
-    print(paste0("MSE para o modelo---> ",sqrt(mse)))
+    print(paste0("RMSE para o modelo---> ",sqrt(mse)))
 
-    erro_usando_media <- mean((quality - mean(quality))^2)
+    #Erro médio em relação a média dos valores observados 
+    erro_usando_media <- mean((fit - mean(valores_observados))^2)
     print(paste0("Erro médio em relação a média para o modelo---> ",sqrt(erro_usando_media)))
-    
+
+
 
 
     # grafico residuo
     if (!is.null(modelo)){ 
         rs <- resid(modelo)
-        plot(predict(modelo), rs, xlab = "Preditor linear",ylab = "Residuos",main=tit_grafico)
+        plot(predict(modelo), rs, xlab = "Qualidade predita",ylab = "Residuos",main=tit_grafico)
         abline(h = 0, lty = 2)
     }
     
@@ -644,7 +695,6 @@ testa.modelo <- function(modelo=NULL,valores_observados,valores_preditos=NULL, d
 
 
 # função resumida (sem gráfico)
-
 testa.modelo_res <- function(modelo=NULL,valores_observados,valores_preditos=NULL, dataset, sumario=TRUE){
     # Testa o modelo
     #Exibe um sumário do modelo 
@@ -678,14 +728,14 @@ testa.modelo_res <- function(modelo=NULL,valores_observados,valores_preditos=NUL
   
     #Calcula a média do quadrado das diferenças entre os valores preditos e os observados 
     mse <- mean((valores_observados - fit)^2)
-    print(paste0("MSE para o modelo---> ",sqrt(mse)))
-
-    erro_usando_media <- mean((quality - mean(quality))^2)
+    print(paste0("RMSE para o modelo---> ",sqrt(mse)))
+    erro_usando_media <- mean((fit - mean(valores_observados))^2)
     print(paste0("Erro médio em relação a média para o modelo---> ",sqrt(erro_usando_media)))
     
     return (NULL)    
     
 }
+
 
 ```
 
@@ -720,6 +770,7 @@ teste %>%
 ```
 
 
+
 ```{r}
 
 # Modelo de regressão linear simples
@@ -734,42 +785,34 @@ modelo1 <- lm(quality ~ . ,
 
 
 
-measures <- function(x) {
-  L <- list(npar = length(coef(x)),
-            dfres = df.residual(x),
-            nobs = length(fitted(x)),
-            RMSE = summary(x)$sigma,
-            R2 = summary(x)$r.squared,
-            R2adj = summary(x)$adj.r.squared,
-            PRESS = press(x),
-            logLik = logLik(x),
-            AIC = AIC(x),
-            BIC = BIC(x))
-  unlist(L)
-}
+print("*** Estatísticas sobre o desempenho do modelo ****")
+print("> nobs = número de amostras")
+print("> RMSE = diferença média do valor predito em relação ao valor observado")
+print("> R2 = R-quadrado é uma medida da qualidade da predição")
+print("> R2adj = R-quadrado ajustado é uma outra medida da qualidade de predição")
 
 modl <- list(m1 = modelo0,m2=modelo1)
 round(t(sapply(modl, measures)), 3)
 
 
 # Modelo de regressão linear com o modelo aplicado o PCA - treinamento
-print("Modelo com regressão linear aplicada sobre o modelo com atributos gerados pelo PCA - treinamento")
+print("Modelo com regressão linear aplicada sobre o modelo com PCA - treinamento")
 result <- testa.modelo(modelo=modelo0, valores_observados=treinamento_comPCA$quality, tit_grafico = "Linear com PCA - treino")
 
 
 # Modelo de regressão linear com o modelo aplicado o PCA - teste
-print("Modelo com regressão linear aplicada sobre o modelo com atributos gerados pelo PCA - teste")
+print("Modelo com regressão linear aplicada sobre o modelo com PCA - teste")
 result <- testa.modelo(modelo=modelo0, dataset=teste_comPCA, valores_observados=teste_comPCA$quality, tit_grafico = "Linear com PCA - teste")
 
 
 
 # Modelo com os dados completos sem transformação via PCA - treinamento
-print("Modelo de regressão linear aplicada sobre o modelo com todos os atributos - treinamento")
+print("Modelo de regressão linear aplicada sobre o modelo sem PCA - treinamento")
 result <- testa.modelo(modelo=modelo1, valores_observados=treinamento_semPCA$quality, tit_grafico = "Linear Completo - treino")
 
 
-# Modelo com os dados completos sem transformação via PCA - teste
-print("Modelo de regressão linear aplicada sobre o modelo com todos os atributos - teste")
+# Modelo com os dados completos sem transformação  PCA - teste
+print("Modelo de regressão linear aplicada sobre o modelo sem PCA - teste")
 result <- testa.modelo(modelo=modelo1, dataset=teste_semPCA, valores_observados=teste_semPCA$quality, tit_grafico = "Linear Completo - teste")
 
 
@@ -801,6 +844,14 @@ stepwise<-step(modelo.medio,direction="both")
  
 
 print("*** Análise dos indicadores para modelos de regressão linear obtidos pelos métodos forward,backward e both ****")
+
+
+print("*** Estatísticas sobre o desempenho do modelo ****")
+print("> nobs = número de amostras")
+print("> RMSE = diferença média do valor predito em relação ao valor observado")
+print("> R2 = R-quadrado é uma medida da qualidade da predição")
+print("> R2adj = R-quadrado ajustado é uma outra medida da qualidade de predição")
+
 
 modl <- list(m1 = forward,m2=backward,m3=stepwise)
 round(t(sapply(modl, measures)), 3)
@@ -862,188 +913,135 @@ result<-testa.modelo(modelo=NULL,valores_observados=VinhosBrancosModelosRuins$qu
 
 
 ```{r fig.width=22, fig.height=18,echo=FALSE, message=FALSE, warning=FALSE}
-
 #Árvore de Regressão com a aplicação de PCA
-
 library(rpart.plot)
 library(rpart)
-
-
 modelo_Valor_tree0 <- rpart (quality ~ . ,
                             data = treinamento_comPCA, 
                             cp = 0.001,minsplit = 5,maxdepth=10)
-
-
-
 # Faz o Gráfico
 rpart.plot(modelo_Valor_tree0, type=4, extra=1, under=FALSE, clip.right.labs=TRUE,
            fallen.leaves=FALSE,   digits=2, varlen=-10, faclen=20,
            cex=0.4, tweak=1.7,
            compress=TRUE,
            snip=FALSE)
-
-
 ```
 
 
 ```{r, message=FALSE}
 library(rpart)
-
-print("Modelo de Árvore de regressão com aplicação de PCA (atributos retirados) - treinamento")
+print("Modelo de Árvore de regressão com PCA  - treinamento")
 result<-testa.modelo(modelo=modelo_Valor_tree0, valores_observados=treinamento_comPCA$quality, tit_grafico = "Árvore de Regressão com PCA - treino", sumario=FALSE)
-
-print("Modelo de Árvore de regressão com aplicação de PCA (atributos retirados) - teste")
+print("Modelo de Árvore de regressão com PCA  - teste")
 result<-testa.modelo(modelo=modelo_Valor_tree0, dataset=teste_comPCA, valores_observados=teste_comPCA$quality, tit_grafico = "Árvore de Regressão com PCA - teste", sumario=FALSE)
  
-
 ```
 
 
 
 
 ```{r fig.width=22, fig.height=18,echo=FALSE, warning=FALSE}
-
 #Árvore de Regressão sem a aplicação de PCA
-
 modelo_Valor_tree1 <- rpart (quality ~ . , 
                             data = treinamento_semPCA, 
                             cp = 0.001,minsplit = 5,maxdepth=10)
-
-
-
-
 # Faz o Gráfico
 rpart.plot(modelo_Valor_tree1, type=4, extra=1, under=FALSE, clip.right.labs=TRUE,
            fallen.leaves=FALSE,   digits=2, varlen=-10, faclen=20,
            cex=0.4, tweak=1.7,
            compress=TRUE,
            snip=FALSE)
-
-
 ```
 
 
 ```{r}
 library(rpart)
-
-print("Modelo de Árvore de regressão com todos os atributos sem aplicação de PCA - treinamento")
+print("Modelo de Árvore de regressão com todos os atributos sem PCA - treinamento")
 result<-testa.modelo(modelo=modelo_Valor_tree1, valores_observados=treinamento_semPCA$quality, tit_grafico = "Árvore de Regressão completa - treino", sumario=FALSE)
-
-print("Modelo de Árvore de regressão com todos os atributos sem aplicação de PCA - teste")
+print("Modelo de Árvore de regressão com todos os atributos sem PCA - teste")
 result<-testa.modelo(modelo=modelo_Valor_tree1, dataset=teste_semPCA, valores_observados=teste_semPCA$quality, tit_grafico = "Árvore de Regressão completa - teste", sumario=FALSE)
-
 ```
 
 
 
 
 ```{r}
-
 # Random Forest com a aplicação do PCA
-
 library(randomForest)
-
-
 modelo_random_forest0 <- randomForest(quality ~ . ,
                                      data = treinamento_comPCA)
-
 ```
 
 
 
 ```{r}
-
-print("Modelo de Random Forest com a aplicação de PCA - treinamento")
+print("Modelo de Random Forest com PCA - treinamento")
 result<-testa.modelo_res(modelo=modelo_random_forest0, valores_observados=treinamento_comPCA$quality)
-
-print("Modelo de Random Forest com todos os atributos sem aplicação de PCA - teste")
+print("Modelo de Random Forest com PCA - teste")
 result<-testa.modelo_res(modelo=modelo_random_forest0, dataset=teste_comPCA, valores_observados=teste_semPCA$quality)
-
 ```
 
 
 
 
 ```{r}
-
 # Random Forest sem a aplicação do PCA
-
 library(randomForest)
-
-
 modelo_random_forest1 <- randomForest(quality ~ . ,
                                      data = treinamento_semPCA)
-
-
 ```
 
 
 
 ```{r}
 library(rpart)
-
-print("Modelo de Random Forest com todos os atributos sem aplicação de PCA - treinamento")
+print("Modelo de Random Forest com todos os atributos sem PCA - treinamento")
 result<-testa.modelo_res(modelo=modelo_random_forest1, valores_observados=treinamento_semPCA$quality)
-
-print("Modelo de Random Forest com todos os atributos sem aplicação de PCA - teste")
+print("Modelo de Random Forest com todos os atributos sem PCA - teste")
 result<-testa.modelo_res(modelo=modelo_random_forest1, dataset=teste_semPCA, valores_observados=teste_semPCA$quality)
-
 ```
 
 
 
 ```{r}
-
 # Árvore de Decisão (classificação) com a aplicação do PCA
-
 modelo_Valor_tree_class0 <- rpart (quality ~ . ,
                             data = treinamento_comPCA,
                             method = 'class')
-
 ```
 
 
 ```{r}
-
 # Matriz de Confusão - Árvore de Decisão com a aplicação de PCA
-
 library(caret)
-
-
+print("Modelo de árvore de decisão com PCA - treinamento")
 # Dataset de treinamento
 confusionMatrix(predict(modelo_Valor_tree_class0, type = 'class'), factor(treinamento_comPCA$quality))
 
-
+print("Modelo de árvore de decisão com PCA - teste")
 # Dataset de teste
 confusionMatrix(predict(modelo_Valor_tree_class0, newdata = teste_comPCA, type = 'class'), factor(teste_comPCA$quality))
-
 ```
 
 
 
 ```{r}
-
 # Árvore de Decisão (classificação) sem a aplicação do PCA
-
 modelo_Valor_tree_class1 <- rpart (quality ~ . ,
                             data = treinamento_semPCA,
                             method = 'class')
-
-
 ```
 
 
 ```{r}
-
 # Matriz de Confusão - Árvore de Decisão sem a aplicação de PCA
-
 library(caret)
-
 # Dataset de treinamento
+
+print("Modelo de árvore de decisão sem PCA - treinamento")
 confusionMatrix(predict(modelo_Valor_tree_class1, type = 'class'), factor(treinamento_semPCA$quality))
-
-
 # Dataset de teste
+print("Modelo de árvore de decisão sem PCA - teste")
 confusionMatrix(predict(modelo_Valor_tree_class1, newdata = teste_semPCA, type = 'class'), factor(teste_semPCA$quality))
 ```
 
@@ -1051,15 +1049,26 @@ confusionMatrix(predict(modelo_Valor_tree_class1, newdata = teste_semPCA, type =
 
 ```{r}
 
+library(MASS)
+
+# Regressão Logística com a aplicação de PCA
+modelo_logistica0 <- polr(factor(quality) ~ . ,
+                          data = treinamento_comPCA,
+                          Hess = TRUE)
+
+```
+
+
+
+
+```{r}
 # Matriz de Confusão - Regressão Logística Ordinal com a aplicação de PCA
-
 library(caret)
-
 # Dataset de treinamento
+print("Modelo de regressão logística com PCA - treinamento")
 confusionMatrix(predict(modelo_logistica0), factor(treinamento_comPCA$quality))
-
-
 # Dataset de teste
+print("Modelo de regressão logística com PCA - teste")
 confusionMatrix(predict(modelo_logistica0, newdata = teste_comPCA), factor(teste_comPCA$quality))
 
 ```
@@ -1067,30 +1076,149 @@ confusionMatrix(predict(modelo_logistica0, newdata = teste_comPCA), factor(teste
 
 
 ```{r}
+library(MASS)
 
 # Regressão Logística sem a aplicação de PCA
-
 modelo_logistica1 <- polr(factor(quality) ~ . ,
                           data = treinamento_semPCA,
                           Hess = TRUE)
-
 ```
 
 
 ```{r}
-
 # Matriz de Confusão - Regressão Logística Ordinal sem a aplicação de PCA
-
 library(caret)
-
 # Dataset de treinamento
+print("Modelo de regressão logística sem PCA - treinamento")
 confusionMatrix(predict(modelo_logistica1), factor(treinamento_semPCA$quality))
-
-
 # Dataset de teste
+print("Modelo de regressão logística sem PCA - teste")
 confusionMatrix(predict(modelo_logistica1, newdata = teste_semPCA), factor(teste_semPCA$quality))
-
 ```
+
+
+
+
+
+<br><br>
+
+
+# Datasets
+
+<br>
+Com a utilização do PCA, surgem 2 datasets a serem submetidos aos algoritmos de predição ou classificação. 
+
+<b>Primeiro dataset:</b> chamado de "Com PCA"
+
+* Dataset com os vinhos brancos sem os outliers e com a aplicação dos três primeiros componentes do PCA e extração dos atributos que foram utilizados para o cálculo dos auto-vetores:  
+(totalsulfurdioxide,freesulfurdioxide, density,residualsugar,alcohol), obtem-se o dataset a seguir:
+
+  <b>Variáveis independentes:</b>
+  
+  * fixedacidity
+  * volatileacidity
+  * citricacid
+  * chlorides
+  * pH
+  * sulphates
+  * pca1
+  * pca2
+  * pca3
+  
+  <b>Variável dependente:</b>
+  
+  * quality
+  
+<b>Segundo dataset:</b> chamado de "Sem PCA"
+
+* Modelo completo do dataset de vinhos brancos sem os outliers e com os atributos numéricos
+
+  <b>Variáveis independentes:</b>
+  
+  * fixedacidity
+  * volatileacidity
+  * citricacid
+  * chlorides
+  * pH
+  * sulphates
+  * totalsulfurdioxide
+  * freesulfurdioxide
+  * density
+  * residualsugar
+  * alcohol
+  
+  <b>Variável dependente:</b>
+  
+  * quality
+
+
+<br><br>
+
+# Técnicas utilizadas 
+
+<br>
+As técnicas de predição e classificação foram aplicadas tanto no primeiro como no segundo dataset. 
+
+Para métrica de qualidade dos modelos, foi utilizado o RMSE para os modelos preditivos e a acurácia da matriz de confusão para os de classificação. 
+
+Os datasets foram divididos em amostras de treinamento e teste na proporção 70% e 30%, respectivamente.  
+
+Os indicadores de qualidade considerados foram aqueles obtidos na amostra de teste.
+
+
+* <b>Regressão Linear</b> encontra o hiperplano com as variáveis independentes que possua a menor distância em relação a variável dependente
+  * No caso em questão, procurou-se a melhor combinação de variáveis independentes para comporem o hiperplano através dos métodos de busca forward, backward e both, aplicou-se ao dataset Sem PCA e os resultados não foram melhores que os obtidos com os datasets originais. Na estratégia de backward, obteve-se um RMSE de 0.7470
+  * O melhor modelo ocorreu com o dataset sem PCA com RMSE de 0.7472
+  * No modelo com PCA, obteve-se o RMSE de 0.7529
+  * Os resíduos se distribuem aleatoriamente no gráfico de dispersão.
+  
+*   <b>Árvore de Regressão</b> encontra uma sequência de regras comparativas envolvendo as variáveis independentes, representada como uma árvore, e ao chegar à folha dessa estrutura, realiza uma regressão linear para estimar o valor da variável dependente
+   * Com esse método, obteve-se o RMSE de 0.8302 no dataset sem PCA
+   * o gráfico de dispersão mostra os resíduos distribuídos aleatoriamente 
+
+
+* <b>Random Forest</b> estratégia de Bagging que gera várias árvores de regressão e utiliza a árvore com os melhores resultados para realizar a predição.
+   * Com esse método, obteve-se o RMSE de 0.7058 no dataset sem PCA
+   
+* <b>Árvore de Decisão</b> é semelhante a árvore de regressão, no entanto, cada folha deve conduzir a um único valor para a variável discreta dependente.
+   * Com esse método, obteve-se uma acurácia 0.5295 no dataset sem PCA
+   
+* <b>Regressão Logística Ordinal</b> é uma variação da regressão logística que permite que a variável dependente seja discreta com multivalorada
+   * Com esse método, obteve-se uma acurácia 0.5212 no dataset com PCA
+
+<br><br>
+
+#Análise dos modelos
+
+<br>
+O melhor modelo preditivo foi o Random Forest aplicado no dataset sem PCA que apresentou um RMSE de 0.7058 e o melhor modelo de classificação foi a árvore de decisão aplicado no dataset sem PCA que apresenta uma acurácia de 0.5295. 
+
+Percebe-se que a qualidade dos modelos não é satisfatória, uma vez que o método bem óbvio e ruim, que seria sempre predizer a qualidade média da amostra de vinhos brancos apresenta um RMSE de 0.8681 e o melhor modelo preditivo apresenta RMSE de 0.7058. 
+
+E para o modelo de classificação, a melhor acurácia é de 52,95%, portanto muito próximo dos 50%, que é o equivalente a se jogar uma moeda para se determinar se o valor é confiável ou não. Para modelos de classificação, normalmente espera-se uma acurácia superior a 80%. 
+
+Outro aspecto digno de nota é o fato da utilização do PCA ser eficiente, pois os resultados de acurácia e RMSE apresentam-se muito próximos tanto nos modelos aplicados nos datasets com PCA e sem PCA.
+
+No entanto, com exceção da Regressão Logística Ordinal, em todas as outras técnicas, o dataset sem a aplicação do PCA gerou um modelo de qualidade ligeiramente superior. Isto indica que apesar de poder gerar um modelo que potencialmente exige um menor poder computacional para as predições e classificações, cobra-se uma perda na qualidade quando se aplica o PCA. 
+
+<br><br>
+#Recomendações sobre a aprendizagem supervisionada
+
+<br>
+Há algumas hipóteses e recomendações para solucionar o problema: 
+
+* As variáveis independentes não são suficientes para explicar a variável dependente quality, deste modo, deve-se enriquecer o modelo a fim de melhorar os indicadores de desempenhos dos mesmos
+
+* Utilizar alguma técnica de ensembles, com as estratégias de Bagging (além da Random Forest) ou Boosting
+
+* Treinar modelos especializados em identificar cada qualidade ou agrupamento de qualidades de vinhos brancos
+
+* A quantidade de amostras de vinhos brancos de todas as qualidades não são suficientes para os modelos utilizados. Deste modo, deve-se arrumar um número maior de amostras de algumas qualidades de vinhos.
+
+<br><br>
+
+
+
 
 
 
@@ -1119,7 +1247,7 @@ Pelo gráfico acima, nota-se que 3 é a quantidade ideal de clusters já que a p
 k-means com todos os atributos
 
 
-```{r warning=FALSE, message=FALSE, echo=FALSE}
+```{r warning=FALSE, message=FALSE, echo=FALSE, fig.width=16, fig.height=18}
 # fixedacidity, volatileacidity, citricacid, chlorides, pH, sulphates, totalsulfurdioxide,
 # freesulfurdioxide, density, residualsugar, alcohol
 
