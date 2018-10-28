@@ -1032,9 +1032,15 @@ modelo_Valor_tree_class0 <- rpart (quality ~ . ,
 
 
 ```{r}
+
 # Matriz de Confusão - Árvore de Decisão com a aplicação de PCA
 library(caret)
-confusionMatrix(factor(treinamento_comPCA$quality), predict(modelo_Valor_tree_class0, type = 'class'))
+
+# Dataset de treinamento
+confusionMatrix(predict(modelo_Valor_tree_class0, type = 'class'), factor(treinamento_comPCA$quality))
+# Dataset de teste
+confusionMatrix(predict(modelo_Valor_tree_class0, newdata = teste_comPCA, type = 'class'), factor(teste_comPCA$quality))
+
 ```
 
 
@@ -1053,7 +1059,11 @@ modelo_Valor_tree_class1 <- rpart (quality ~ . ,
 
 # Matriz de Confusão - Árvore de Decisão sem a aplicação de PCA
 library(caret)
-confusionMatrix(factor(treinamento_semPCA$quality), predict(modelo_Valor_tree_class1, type = 'class'))
+# Dataset de treinamento
+confusionMatrix(predict(modelo_Valor_tree_class1, type = 'class'), factor(treinamento_semPCA$quality))
+# Dataset de teste
+confusionMatrix(predict(modelo_Valor_tree_class1, newdata = teste_semPCA, type = 'class'), factor(teste_semPCA$quality))
+
 
 ```
 
@@ -1076,23 +1086,31 @@ modelo_logistica0 <- polr(factor(quality) ~ . ,
 
 # Matriz de Confusão - Regressão Logística Ordinal com a aplicação de PCA
 library(caret)
-confusionMatrix(factor(treinamento_comPCA$quality), predict(modelo_logistica0))
-
+# Dataset de treinamento
+confusionMatrix(predict(modelo_logistica0), factor(treinamento_comPCA$quality))
+# Dataset de teste
+confusionMatrix(predict(modelo_logistica0, newdata = teste_comPCA), factor(teste_comPCA$quality))
 ```
 
 
 ```{r}
+
 # Regressão Logística sem a aplicação de PCA
 modelo_logistica1 <- polr(factor(quality) ~ . ,
                           data = treinamento_semPCA,
                           Hess = TRUE)
+
 ```
 
 
 ```{r}
+
 # Matriz de Confusão - Regressão Logística Ordinal sem a aplicação de PCA
 library(caret)
-confusionMatrix(factor(treinamento_semPCA$quality), predict(modelo_logistica1))
+# Dataset de treinamento
+confusionMatrix(predict(modelo_logistica1), factor(treinamento_semPCA$quality))
+# Dataset de teste
+confusionMatrix(predict(modelo_logistica1, newdata = teste_semPCA), factor(teste_semPCA$quality))
 
 ```
 
