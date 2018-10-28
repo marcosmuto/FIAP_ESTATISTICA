@@ -670,7 +670,7 @@ testa.modelo <- function(modelo=NULL,valores_observados,valores_preditos=NULL, d
 
     #Calcula a média do quadrado das diferenças entre os valores preditos e os observados 
     mse <- mean((valores_observados - fit)^2)
-    print(paste0("MSE para o modelo---> ",sqrt(mse)))
+    print(paste0("RMSE para o modelo---> ",sqrt(mse)))
 
     #Erro médio em relação a média dos valores observados 
     erro_usando_media <- mean((fit - mean(valores_observados))^2)
