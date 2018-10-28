@@ -31,7 +31,8 @@ packages <- c("psych",
               "rpart",
               "rpart.plot",
               "MASS",
-              "randomForest")
+              "randomForest",
+              "caret")
 
 
 
