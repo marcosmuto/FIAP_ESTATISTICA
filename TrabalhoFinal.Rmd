@@ -30,7 +30,8 @@ packages <- c("psych",
               "car",
               "rpart",
               "rpart.plot",
-              "MASS")
+              "MASS",
+              "randomForest")
 
 
 
@@ -549,12 +550,12 @@ library(dplyr)
 
 dados_padronizados %>% select(totalsulfurdioxide,freesulfurdioxide, density,residualsugar,alcohol) -> df 
 pca <- prcomp(df, scale=TRUE)
-print(get_eig(pca2))
+print(get_eig(pca))
 
 ```
 
-Analisando a tabela acima, nota-se que os dois primeiros componentes já contribuem para mais de 80% da variancia da base.
-Mediante a constatação, criou-se dois novos atributos pca1 e pca2 correspondendo ao primeiro e segundo componentes do PCA.
+Analisando a tabela acima, nota-se que os três primeiros componentes já contribuem para mais de 92% da variancia da base.
+Mediante a constatação, criou-se três novos atributos pca1, pca2 e pca3 correspondendo ao primeiro, segundo e terceiro componentes do PCA.
 Por fim, os atributos originais foram excluídos do modelo por serem passíveis de substituição sem grandes prejuízos.
 <br><br>
 
@@ -569,8 +570,6 @@ VinhosBrancosNum$pca2 = pca$x[,2]
 print("Histograma do Segundo Componente")
 hist(VinhosBrancosNum$pca2)
 
-
-#Teste com 3 componente 
 VinhosBrancosNum$pca3 = pca$x[,3]
 
 print("Histograma do Terceiro Componente")
@@ -642,6 +641,51 @@ testa.modelo <- function(modelo=NULL,valores_observados,valores_preditos=NULL, d
     
 }
 
+
+# função resumida (sem gráfico)
+
+testa.modelo_res <- function(modelo=NULL,valores_observados,valores_preditos=NULL, dataset, sumario=TRUE){
+    # Testa o modelo
+    #Exibe um sumário do modelo 
+    if (is.null(modelo)){
+       fit = valores_preditos
+    }
+    else {
+        #Caso haja modelo.... 
+        print("Sumário do modelo....")
+        if(sumario){
+          summary(modelo)
+        } 
+        else {
+         str(modelo)
+        }
+    
+        #Faz as predições do modelo 
+        Val_pred <- predict(modelo, newdata = dataset, interval = "prediction", level = 0.95)
+        dimensoes = length(dim(Val_pred)) 
+        
+        if (dimensoes > 1) { 
+          # intervalo de confianca - grafico para media
+          fit <- Val_pred[,1] # valores preditos
+          lower <- Val_pred[,2] # limite inferior
+          upper <- Val_pred[,3] # limite superior
+        }
+        else {
+          fit <- Val_pred
+        }
+    }
+  
+    #Calcula a média do quadrado das diferenças entre os valores preditos e os observados 
+    mse <- mean((valores_observados - fit)^2)
+    print(paste0("MSE para o modelo---> ",sqrt(mse)))
+
+    erro_usando_media <- mean((quality - mean(quality))^2)
+    print(paste0("Erro médio em relação a média para o modelo---> ",sqrt(erro_usando_media)))
+    
+    return (NULL)    
+    
+}
+
 ```
 
 
@@ -664,13 +708,11 @@ teste %>%
 
 
 # Dados com a aplicação do PCA
-#Teste componente 3
 treinamento %>%
-  select(fixedacidity, volatileacidity, citricacid, chlorides, pH, sulphates, pca1, pca2, pca3,quality) -> treinamento_comPCA
+  select(fixedacidity, volatileacidity, citricacid, chlorides, pH, sulphates, pca1, pca2, pca3, quality) -> treinamento_comPCA
 
-#Teste componente 3
 teste %>% 
-  select(fixedacidity, volatileacidity, citricacid, chlorides, pH, sulphates, pca1, pca2, pca3,quality) -> teste_comPCA
+  select(fixedacidity, volatileacidity, citricacid, chlorides, pH, sulphates, pca1, pca2, pca3, quality) -> teste_comPCA
 
 
 ```
@@ -709,23 +751,23 @@ round(t(sapply(modl, measures)), 3)
 
 
 # Modelo de regressão linear com o modelo aplicado o PCA - treinamento
-print("Modelo com regressão linear aplicada sobre o modelo com atributos gerados pelo PCA")
+print("Modelo com regressão linear aplicada sobre o modelo com atributos gerados pelo PCA - treinamento")
 result <- testa.modelo(modelo=modelo0, valores_observados=treinamento_comPCA$quality, tit_grafico = "Linear com PCA - treino")
 
 
 # Modelo de regressão linear com o modelo aplicado o PCA - teste
-print("Modelo com regressão linear aplicada sobre o modelo com atributos gerados pelo PCA")
+print("Modelo com regressão linear aplicada sobre o modelo com atributos gerados pelo PCA - teste")
 result <- testa.modelo(modelo=modelo0, dataset=teste_comPCA, valores_observados=teste_comPCA$quality, tit_grafico = "Linear com PCA - teste")
 
 
 
 # Modelo com os dados completos sem transformação via PCA - treinamento
-print("Modelo de regressão linear aplicada sobre o modelo com todos os atributos")
+print("Modelo de regressão linear aplicada sobre o modelo com todos os atributos - treinamento")
 result <- testa.modelo(modelo=modelo1, valores_observados=treinamento_semPCA$quality, tit_grafico = "Linear Completo - treino")
 
 
 # Modelo com os dados completos sem transformação via PCA - teste
-print("Modelo de regressão linear aplicada sobre o modelo com todos os atributos")
+print("Modelo de regressão linear aplicada sobre o modelo com todos os atributos - teste")
 result <- testa.modelo(modelo=modelo1, dataset=teste_semPCA, valores_observados=teste_semPCA$quality, tit_grafico = "Linear Completo - teste")
 
 
@@ -819,6 +861,8 @@ result<-testa.modelo(modelo=NULL,valores_observados=VinhosBrancosModelosRuins$qu
 
 ```{r fig.width=22, fig.height=18,echo=FALSE, message=FALSE, warning=FALSE}
 
+#Árvore de Regressão com a aplicação de PCA
+
 library(rpart.plot)
 library(rpart)
 
@@ -857,6 +901,7 @@ result<-testa.modelo(modelo=modelo_Valor_tree0, dataset=teste_comPCA, valores_ob
 
 ```{r fig.width=22, fig.height=18,echo=FALSE, warning=FALSE}
 
+#Árvore de Regressão sem a aplicação de PCA
 
 modelo_Valor_tree1 <- rpart (quality ~ . , 
                             data = treinamento_semPCA, 
@@ -888,62 +933,134 @@ result<-testa.modelo(modelo=modelo_Valor_tree1, dataset=teste_semPCA, valores_ob
 ```
 
 
+
+
 ```{r}
 
-# Árvore de Decisão com a aplicação do PCA
+# Random Forest com a aplicação do PCA
 
-modelo_Valor_tree_class0 <- rpart (quality ~ . ,
-                            data = treinamento_comPCA,
-                            method = 'class')
+library(randomForest)
 
 
+modelo_random_forest0 <- randomForest(quality ~ . ,
+                                     data = treinamento_comPCA)
 
-# Faz o Gráfico
-rpart.plot(modelo_Valor_tree_class0, type=4, extra=1, under=FALSE, clip.right.labs=TRUE,
-           fallen.leaves=FALSE,   digits=2, varlen=-10, faclen=20,
-           cex=0.4, tweak=1.7,
-           compress=TRUE,
-           snip=FALSE)
 ```
 
 
 
 ```{r}
 
-# Árvore de Decisão sem a aplicação do PCA
+print("Modelo de Random Forest com a aplicação de PCA - treinamento")
+result<-testa.modelo_res(modelo=modelo_random_forest0, valores_observados=treinamento_comPCA$quality)
+
+print("Modelo de Random Forest com todos os atributos sem aplicação de PCA - teste")
+result<-testa.modelo_res(modelo=modelo_random_forest0, dataset=teste_comPCA, valores_observados=teste_semPCA$quality)
+
+```
+
+
+
+
+```{r}
+
+# Random Forest sem a aplicação do PCA
+
+library(randomForest)
+
+
+modelo_random_forest1 <- randomForest(quality ~ . ,
+                                     data = treinamento_semPCA)
+
+
+```
+
+
+
+```{r}
+library(rpart)
+
+print("Modelo de Random Forest com todos os atributos sem aplicação de PCA - treinamento")
+result<-testa.modelo_res(modelo=modelo_random_forest1, valores_observados=treinamento_semPCA$quality)
+
+print("Modelo de Random Forest com todos os atributos sem aplicação de PCA - teste")
+result<-testa.modelo_res(modelo=modelo_random_forest1, dataset=teste_semPCA, valores_observados=teste_semPCA$quality)
+
+```
+
+
+
+```{r}
+
+# Árvore de Decisão (classificação) com a aplicação do PCA
+
+modelo_Valor_tree_class0 <- rpart (quality ~ . ,
+                            data = treinamento_comPCA,
+                            method = 'class')
+
+```
+
+
+```{r}
+
+# Matriz de Confusão - Árvore de Decisão com a aplicação de PCA
+
+library(caret)
+
+confusionMatrix(factor(treinamento_comPCA$quality), predict(modelo_Valor_tree_class0, type = 'class'))
+```
+
+
+
+```{r}
+
+# Árvore de Decisão (classificação) sem a aplicação do PCA
 
 modelo_Valor_tree_class1 <- rpart (quality ~ . ,
                             data = treinamento_semPCA,
                             method = 'class')
 
 
-
-# Faz o Gráfico
-rpart.plot(modelo_Valor_tree_class1, type=4, extra=1, under=FALSE, clip.right.labs=TRUE,
-           fallen.leaves=FALSE,   digits=2, varlen=-10, faclen=20,
-           cex=0.4, tweak=1.7,
-           compress=TRUE,
-           snip=FALSE)
 ```
 
 
+```{r}
+
+# Matriz de Confusão - Árvore de Decisão sem a aplicação de PCA
+
+library(caret)
+
+confusionMatrix(factor(treinamento_semPCA$quality), predict(modelo_Valor_tree_class1, type = 'class'))
+```
 
 
 ```{r, warning=FALSE}
 
-# Regressão Logística Ordenada
+# Regressão Logística Ordinal
 
 library(MASS)
 
-# Regressão Logística com a aplicação do PCA
+# Regressão Logística Ordinal com a aplicação do PCA
 
 modelo_logistica0 <- polr(factor(quality) ~ . ,
                           data = treinamento_comPCA,
                           Hess = TRUE)
 
-summary(modelo_logistica0)
+```
 
 
+```{r}
+
+# Matriz de Confusão - Regressão Logística Ordinal com a aplicação de PCA
+
+library(caret)
+
+confusionMatrix(factor(treinamento_comPCA$quality), predict(modelo_logistica0))
+```
+
+
+
+```{r}
 
 # Regressão Logística sem a aplicação de PCA
 
@@ -951,7 +1068,16 @@ modelo_logistica1 <- polr(factor(quality) ~ . ,
                           data = treinamento_semPCA,
                           Hess = TRUE)
 
-summary(modelo_logistica1)
+```
+
+
+```{r}
+
+# Matriz de Confusão - Regressão Logística Ordinal sem a aplicação de PCA
+
+library(caret)
+
+confusionMatrix(factor(treinamento_semPCA$quality), predict(modelo_logistica1))
 
 ```
 
