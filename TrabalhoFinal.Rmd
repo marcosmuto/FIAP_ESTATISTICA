@@ -584,13 +584,9 @@ print(get_eig(pca))
 
 ```
 
-<<<<<<< HEAD
-Analisando a tabela acima, nota-se que os três primeiros componentes contribuem para mais de 92% da variancia da base.
-Mediante a constatação, criou-se três novos atributos pca1,pca2 e pca3 correspondendo ao primeiro e segundo componentes do PCA.
-=======
+
 Analisando a tabela acima, nota-se que os três primeiros componentes já contribuem para mais de 92% da variancia da base.
 Mediante a constatação, criou-se três novos atributos pca1, pca2 e pca3 correspondendo ao primeiro, segundo e terceiro componentes do PCA.
->>>>>>> upstream/master
 Por fim, os atributos originais foram excluídos do modelo por serem passíveis de substituição sem grandes prejuízos.
 <br><br>
 
@@ -740,6 +736,7 @@ testa.modelo_res <- function(modelo=NULL,valores_observados,valores_preditos=NUL
 ```
 
 
+#### Dividindo o dataset em treino e teste
 
 ```{r}
 
@@ -769,9 +766,12 @@ teste %>%
 
 ```
 
+O dataset foi dividido de modo que 70% será utilizado para treinamento dos modelos e 30% para teste.
+
+#### Regressão Linear
 
 
-```{r}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 
 # Modelo de regressão linear simples
 
@@ -882,6 +882,9 @@ print("Modelo de regressão linear utilizando a estratégia both nos vinhos bran
 result<-testa.modelo(modelo=stepwise, dataset=teste_semPCA, valores_observados=teste_semPCA$quality, tit_grafico = "Linear com both - teste")
 ```
 
+#### Regressão com modelos sempre a média e sempre o máximo
+
+Abaixo serão testados modelos preditivos fixos, o resultado é sempre a média ou o valor máximo.
 
 ```{r, message=FALSE}
 
@@ -910,7 +913,7 @@ result<-testa.modelo(modelo=NULL,valores_observados=VinhosBrancosModelosRuins$qu
 
 ```
 
-
+#### Árvore de regressão
 
 ```{r fig.width=22, fig.height=18,echo=FALSE, message=FALSE, warning=FALSE}
 #Árvore de Regressão com a aplicação de PCA
@@ -963,7 +966,7 @@ result<-testa.modelo(modelo=modelo_Valor_tree1, dataset=teste_semPCA, valores_ob
 ```
 
 
-
+#### Random Forest
 
 ```{r}
 # Random Forest com a aplicação do PCA
@@ -1001,7 +1004,7 @@ print("Modelo de Random Forest com todos os atributos sem PCA - teste")
 result<-testa.modelo_res(modelo=modelo_random_forest1, dataset=teste_semPCA, valores_observados=teste_semPCA$quality)
 ```
 
-
+#### Árvore de decisão
 
 ```{r}
 # Árvore de Decisão (classificação) com a aplicação do PCA
@@ -1011,7 +1014,7 @@ modelo_Valor_tree_class0 <- rpart (quality ~ . ,
 ```
 
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 # Matriz de Confusão - Árvore de Decisão com a aplicação de PCA
 library(caret)
 print("Modelo de árvore de decisão com PCA - treinamento")
@@ -1045,9 +1048,9 @@ print("Modelo de árvore de decisão sem PCA - teste")
 confusionMatrix(predict(modelo_Valor_tree_class1, newdata = teste_semPCA, type = 'class'), factor(teste_semPCA$quality))
 ```
 
+#### Regressão Logística
 
-
-```{r}
+```{r warning=FALSE, message=FALSE}
 
 library(MASS)
 
@@ -1188,7 +1191,7 @@ Os indicadores de qualidade considerados foram aqueles obtidos na amostra de tes
 
 <br><br>
 
-#Análise dos modelos
+# Análise dos modelos
 
 <br>
 O melhor modelo preditivo foi o Random Forest aplicado no dataset sem PCA que apresentou um RMSE de 0.7058 e o melhor modelo de classificação foi a árvore de decisão aplicado no dataset sem PCA que apresenta uma acurácia de 0.5295. 
@@ -1202,7 +1205,8 @@ Outro aspecto digno de nota é o fato da utilização do PCA ser eficiente, pois
 No entanto, com exceção da Regressão Logística Ordinal, em todas as outras técnicas, o dataset sem a aplicação do PCA gerou um modelo de qualidade ligeiramente superior. Isto indica que apesar de poder gerar um modelo que potencialmente exige um menor poder computacional para as predições e classificações, cobra-se uma perda na qualidade quando se aplica o PCA. 
 
 <br><br>
-#Recomendações sobre a aprendizagem supervisionada
+
+# Recomendações sobre a aprendizagem supervisionada
 
 <br>
 Há algumas hipóteses e recomendações para solucionar o problema: 
